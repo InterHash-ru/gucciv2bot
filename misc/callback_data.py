@@ -1,0 +1,25 @@
+from aiogram.utils.callback_data import CallbackData
+
+show_callback = CallbackData("show", "action")
+target_callback = CallbackData("target", "action")
+pagination_callback = CallbackData("pagination", "direction")
+
+addWallet_callback = CallbackData("addWallet", "action")
+network_callback = CallbackData("selectNetwork", "network")
+cancel_callback = CallbackData("cancel", "action")
+settings_callback = CallbackData("setting", "action")
+notification_callback = CallbackData("notification", "action")
+language_callback = CallbackData("language", "lang")
+admin_callback = CallbackData("admin", "action")
+adminButton_callback = CallbackData("button", "action")
+nameWallet_callback = CallbackData("name", "action")
+wallet_callback = CallbackData("wallet", "action")
+settingsPage_callback = CallbackData("settingPage", "action")
+pagination_callback = CallbackData("pagination_admin", "action", "page", "all_pages")
+pagination_history_callback = CallbackData("pagination_admin", "action", "page", "all_pages", "id")
+walletInfo_callback = CallbackData("info", "action", "id")
+
+history_trans_callback = CallbackData("transaction", "action", "id")
+settingWallet_callback = CallbackData("settingWallet", "action", "id")
+editWallet_callback = CallbackData("edit", "action", "id")
+switch_trans_callback = CallbackData("switch", "action", "id")

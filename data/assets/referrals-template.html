@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>👤 Рефералы ({$COUNT_REFERRAL})</title>
+		<style type="text/css">
+			.container {
+			width: 1024px;
+			padding: 2em;
+			}
+			.bold-blue {
+			font-weight: bold;
+			color: #0277BD;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="container">
+			<h3>Общее кол-во рефералов: {$COUNT_TRANSITIONS} чел.</h3>
+			<table id="table" 
+				data-toggle="table"
+				data-search="true"
+				data-filter-control="true" 
+				data-show-export="true"
+				data-click-to-select="true"
+				data-toolbar="#toolbar">
+				<thead>
+					<tr>
+						<th data-field="ID" data-filter-control="input" data-sortable="true">ID</th>
+						<th data-field="Referral" data-filter-control="input" data-sortable="true">Реферал</th>
+						<th data-field="Transitions" data-filter-control="input" data-sortable="true">Переходы</th>
+					</tr>
+				</thead>
+				<tbody>
+					{$REFERRAL_LIST}
+				</tbody>
+			</table>
+		</div>
+	</body>
+	<link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.10.0/bootstrap-table.min.css">
+	<link rel="stylesheet" type="text/css" href="https://rawgit.com/vitalets/x-editable/master/dist/bootstrap3-editable/css/bootstrap-editable.css">
+	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+	<script type="text/javascript" src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.10.0/bootstrap-table.js"></script>
+	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.9.1/extensions/editable/bootstrap-table-editable.js"></script>
+	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.9.1/extensions/export/bootstrap-table-export.js"></script>
+	<script type="text/javascript" src="https://rawgit.com/hhurz/tableExport.jquery.plugin/master/tableExport.js"></script>
+	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.9.1/extensions/filter-control/bootstrap-table-filter-control.js"></script>
+</html>
