@@ -6,16 +6,13 @@ NAME_BOT = gucciv2bot
 RUN_BOT = app.py
 SERVICE = bot.service
 
-NAME_TRON = TRACKER-USDT-TRANSACTION
+NAME_TRON = tron
 RUN_TRON_TRACKER = usdt_traker.py
 SERVICE_TRON = tron.service
 
 NAME_ETH = TRACKER-ETH-TRANSACTION
 RUN_ETH_TRACKER = eth_traker.py
 SERVICE_ETH = eth.service
-
-
-#
 
 SYSTEMD_PATH = /etc/systemd/system/
 BOT_NAME = $(subst .service,, $(SERVICE))
@@ -30,18 +27,18 @@ else
 endif
 
 help:
-	@echo "Please use 'make <target>'"
-	@echo "  run                     run project (python${VERSION} ${RUN_BOT})"
-	@echo "  clean                   Delete cache and logs (__pycache__, errors.log)"
-	@echo "  build-requirements      Save requirements.txt project"
-	@echo "  install-requirements    Install requirements.txt"
-	@echo "  build-systemd-bot       Generate (data/bot.service)"
-	@echo "  build-systemd-eth       Generate (data/eth.service)"
-	@echo "  build-systemd-tron      Generate (data/tron.service)"
-	@echo "  run-systemd             Run (${SYSTEMD_PATH}${SERVICE})"
-	@echo "  stop-systemd-bot        Stop RUN-BOT(${SYSTEMD_PATH}${SERVICE})"
-	@echo "  stop-systemd-eth        Stop ETH-TRACKING (${SYSTEMD_PATH}${SERVICE})"
-	@echo "  stop-systemd-tron       Stop TRON-TRACKING (${SYSTEMD_PATH}${SERVICE})"
+	@echo "Пожалуйста, используйте 'make <цель>'"
+	@echo "  run                     Запуск проекта (python${VERSION} ${RUN_BOT})"
+	@echo "  clean                   Удалить кэш и логи (__pycache__, errors.log)"
+	@echo "  build-requirements      Сохранить requirements.txt проекта"
+	@echo "  install-requirements    Установить requirements.txt"
+	@echo "  build-systemd-bot       Генерация файла для systemd (data/bot.service)"
+	@echo "  build-systemd-eth       Генерация файла для systemd (data/bot.service)"
+	@echo "  build-systemd-tron      Генерация файла для systemd (data/bot.service)"
+	@echo "  run-systemd             Запуск (${SYSTEMD_PATH}${SERVICE})"
+	@echo "  stop-systemd-bot        Остановка RUN-BOT(${SYSTEMD_PATH}${SERVICE})"
+	@echo "  stop-systemd-eth        Остановка ETH-TRACKING (${SYSTEMD_PATH}${SERVICE})"
+	@echo "  stop-systemd-tron       Остановка TRON-TRACKING (${SYSTEMD_PATH}${SERVICE})"
 
 run:
 	@python${VERSION} ${RUN_BOT}
@@ -49,14 +46,14 @@ run:
 clean:
 	@find . -name "__pycache__" | xargs rm -rf
 	@truncate -s 0 "data/logs/errors.log"
-	@echo "Cache deleted successfully!"
+	@echo "Кэш успешно удален!"
 
 build-requirements:
 	@pipreqs --force --encoding UTF8
 
 install-requirements:
 	@pip${VERSION} install -r requirements.txt
-	@echo "Install requirements.txt successfully!"
+	@echo "Установка requirements.txt завершена успешно!"
 
 build-systemd-bot:
 	@echo "[Unit]\n\
@@ -76,7 +73,7 @@ build-systemd-bot:
 	[Install]\n\
 	WantedBy=multi-user.target" > ${SYSTEMD_PATH}${SERVICE}
 
-	@echo "Systemd ${SERVICE} generated successfully!\nPath: ${SYSTEMD_PATH}${SERVICE}\n\n"
+	@echo "Systemd ${SERVICE} успешно сгенерирован!\nПуть: ${SYSTEMD_PATH}${SERVICE}\n\n"
 
 	@sudo systemctl daemon-reload
 	@sudo systemctl enable ${BOT_NAME}
@@ -101,7 +98,7 @@ build-systemd-eth:
 	[Install]\n\
 	WantedBy=multi-user.target" > ${SYSTEMD_PATH}${SERVICE_ETH}
 
-	@echo "Systemd ${SERVICE_ETH} generated successfully!\nPath: ${SYSTEMD_PATH}${SERVICE_ETH}\n\n"
+	@echo "Systemd ${SERVICE_ETH} успешно сгенерирован!\nПуть: ${SYSTEMD_PATH}${SERVICE_ETH}\n\n"
 
 	@sudo systemctl daemon-reload
 	@sudo systemctl enable ${NAME_ETH}
@@ -126,7 +123,7 @@ build-systemd-tron:
 	[Install]\n\
 	WantedBy=multi-user.target" > ${SYSTEMD_PATH}${SERVICE_TRON}
 
-	@echo "Systemd ${SERVICE_TRON} generated successfully!\nPath: ${SYSTEMD_PATH}${SERVICE_TRON}\n\n"
+	@echo "Systemd ${SERVICE_TRON} успешно сгенерирован!\nПуть: ${SYSTEMD_PATH}${SERVICE_TRON}\n\n"
 
 	@sudo systemctl daemon-reload
 	@sudo systemctl enable ${NAME_TRON}
@@ -144,9 +141,9 @@ stop-systemd-bot:
 	@sudo systemctl stop ${BOT_NAME}
 
 stop-systemd-tron:
-	@sudo systemctl stop ${BOT_TRON}
+	@sudo systemctl stop ${NAME_TRON}
 
 stop-systemd-eth:
-	@sudo systemctl stop ${BOT_ETH}
+	@sudo systemctl stop ${NAME_ETH}
 
 .PHONY = help run clean build-requirements install-requirements build-systemd run-systemd stop-systemd
