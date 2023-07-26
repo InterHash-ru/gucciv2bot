@@ -1,10 +1,10 @@
 #
-# Makefile (gucciv2bot)
+# Makefile (usdt_tracker)
 #
 
-NAME = gucciv2bot
-RUN_BOT = app.py
-SERVICE = bot.service
+NAME = CHECK-USDT-TRANSACTION
+RUN_CHECKER = usdt_tracker.py
+SERVICE = usdt_tracker.service
 
 #
 
@@ -20,16 +20,16 @@ endif
 
 help:
 	@echo "Please use 'make <target>'"
-	@echo "  run                     run project (python${VERSION} ${RUN_BOT})"
+	@echo "  run                     run project (python${VERSION} ${RUN_CHECKER})"
 	@echo "  clean                   Delete cache and logs (__pycache__, errors.log)"
 	@echo "  build-requirements      Save requirements.txt project"
 	@echo "  install-requirements    Install requirements.txt"
-	@echo "  build-systemd           Generate (data/bot.service)"
+	@echo "  build-systemd           Generate (data/usdt_tracker.service)"
 	@echo "  run-systemd             Run (${SYSTEMD_PATH}${SERVICE})"
 	@echo "  stop-systemd            Stop (${SYSTEMD_PATH}${SERVICE})"
 
 run:
-	@python${VERSION} ${RUN_BOT}
+	@python${VERSION} ${RUN_CHECKER}
 
 clean:
 	@find . -name "__pycache__" | xargs rm -rf
@@ -53,7 +53,7 @@ build-systemd:
 	Type=simple\n\
 	User=root\n\
 	WorkingDirectory=${DIR}\n\
-	ExecStart=/usr/bin/python${VERSION} ${DIR}${RUN_BOT}\n\
+	ExecStart=/usr/bin/python${VERSION} ${DIR}${RUN_CHECKER}\n\
 	\n\
 	RestartSec=10\n\
 	Restart=always\n\
