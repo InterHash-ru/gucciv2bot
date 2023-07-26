@@ -185,7 +185,7 @@ async def wallets(message: types.Message, db, user_info, telegram, settings):
 			"",
 			language("Добавь свой первый кошелек чтобы получать уведомления о транзакциях и отслеживать балансы", user_info['language']),
 		])
-		await message.bot.send_photo(user_info['chat_id'], photo = settings['media'][0]['wallets'], caption = text, reply_markup = keyboard)
+		await message.bot.send_message(chat_id = user_info['chat_id'], text = text, reply_markup = keyboard)
 
 async def callback_pagination(call: types.CallbackQuery, callback_data: dict, db, user_info):
 	if callback_data['action'] == "count":
@@ -343,7 +343,7 @@ async def page_add_wallet(call: types.CallbackQuery, callback_data: dict, db, us
 	keyboard.add(types.InlineKeyboardButton(language("✖️ Отмена", user_info['language']), callback_data = cancel_callback.new(action = 'cancel')))
 
 	await call.bot.delete_message(user_info['chat_id'], call.message.message_id)
-	await call.bot.send_photo(user_info['chat_id'], photo = settings['media'][0]['settings'], caption = language("Выберите сеть:", user_info['language']), reply_markup = keyboard)
+	await call.bot.send_message(chat_id = user_info['chat_id'], text = language("Выберите сеть:", user_info['language']), reply_markup = keyboard)
 
 async def choosing_walletNetwork(call: types.CallbackQuery, callback_data: dict, db, user_info, settings, telegram, state: FSMContext):
 	if callback_data['network'] == "TRON":
