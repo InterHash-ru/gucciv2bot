@@ -29,10 +29,13 @@ help:
 	@echo "  build-systemd           Generate (data/bot.service)"
 	@echo "  run-systemd             Run (${SYSTEMD_PATH}${SERVICE})"
 	@echo "  stop-systemd            Stop (${SYSTEMD_PATH}${SERVICE})"
+	@echo "  run-all                 Run all three files simultaneously"
 
 run:
+	@python${VERSION} ${RUN_BOT} ${USDT_Tracker} ${ETH_Tracker}
+
+run-all:
 	@python${VERSION} ${RUN_BOT} ${USDT_Tracker} ${ETH_Tracker} &
-	@sudo systemctl status ${BOT_NAME}
 
 clean:
 	@find . -name "__pycache__" | xargs rm -rf
@@ -78,6 +81,8 @@ run-systemd:
 
 stop-systemd:
 	@sudo systemctl stop ${BOT_NAME}
-	@pkill -f python${VERSION} ${RUN_BOT} ${USDT_Tracker} ${ETH_Tracker}
+	@pkill -f "python${VERSION} ${RUN_BOT}"
+	@pkill -f "python${VERSION} ${USDT_Tracker}"
+	@pkill -f "python${VERSION} ${ETH_Tracker}"
 
-.PHONY = help run clean build-requirements install-requirements build-systemd run-systemd stop-systemd
+.PHONY = help run run-all clean build-requirements install-requirements build-systemd run-systemd stop-systemd
