@@ -351,14 +351,14 @@ async def choosing_walletNetwork(call: types.CallbackQuery, callback_data: dict,
 			array['try'] = 1
 		keyboard = types.InlineKeyboardMarkup()
 		keyboard.add(types.InlineKeyboardButton(language("✖️ Отмена", user_info['language']), callback_data = cancel_callback.new(action = 'cancel')))
-		await call.bot.edit_message_caption(chat_id = user_info['chat_id'], message_id = call.message.message_id, caption = language("📍 Отправьте адресс TRON кошелька:", user_info['language']), reply_markup = keyboard)
+		await call.bot.edit_message_text(chat_id = user_info['chat_id'], message_id = call.message.message_id, text = language("📍 Отправьте адресс TRON кошелька:", user_info['language']), reply_markup = keyboard)
 		await StatesAddWallet.get_TronAddress.set()
 	elif callback_data['network'] == "ETH":
 		async with state.proxy() as array:
 			array['try'] = 1
 		keyboard = types.InlineKeyboardMarkup()
 		keyboard.add(types.InlineKeyboardButton(language("✖️ Отмена", user_info['language']), callback_data = cancel_callback.new(action = 'cancel')))
-		await call.bot.edit_message_caption(chat_id = user_info['chat_id'], message_id = call.message.message_id, caption = language("📍 Отправьте адресс ETH кошелька:", user_info['language']), reply_markup = keyboard)
+		await call.bot.edit_message_text(chat_id = user_info['chat_id'], message_id = call.message.message_id, text = language("📍 Отправьте адресс ETH кошелька:", user_info['language']), reply_markup = keyboard)
 		await StatesAddWallet.get_ETHAddress.set()
 
 async def cancel_addWallet(call: types.CallbackQuery, callback_data: dict, db, user_info, settings, telegram, state: FSMContext):
