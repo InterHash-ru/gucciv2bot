@@ -16,7 +16,7 @@ from eth_utils import decode_hex
 from misc.translate import language
 from tronpy.providers import HTTPProvider
 from aiogram.utils.markdown import hbold, hcode, hitalic, hunderline, hstrikethrough, hlink
-init()
+# init()
 #os.system("cls")
 
 class CheckTransactions():
@@ -61,6 +61,11 @@ class CheckTransactions():
 		except:
 			return False
 
+	def convert_eth_to_usd(self, eth_amount):
+		eth_to_usd = self.get_eth_to_usd_rate()
+		usd_amount = float(eth_amount) * float(eth_to_usd)
+		return round(usd_amount, 2)
+
 	async def TrackingTransfers(self):
 		await self.db.create_pool()
 
@@ -69,89 +74,101 @@ class CheckTransactions():
 			last_block = self.client.eth.get_block_number()
 			if self.block_number < last_block:
 				try:
-					txs = self.client.eth.get_block(last_block, True)
-#					print("[ETH] BLOCK №" + str(last_block))
-				except Exception:
+					txs = self.client.eth.get_block(int(last_block), True)
+					# print("[ETH] BLOCK №" + str(last_block))
+				except:
 					pass
 
-				for transaction in txs['transactions']:
-					if transaction['input']:
-						try:
-							function_signature = transaction['input'][:10]
-							transfer_signature = '0xa9059cbb'
-							address_from = transaction['from']
-							address_to = transaction['to']
-							tx_hash = transaction['hash'].hex()
-							if function_signature == transaction['input'] and transaction['value'] > 0:
-								for wallet in all_wallets:
-									if wallet['address'] == address_from and wallet['outgoing_transactions'] == 1:
-										eth_amount = self.client.from_wei(transaction['value'], 'ether')
-										balance_usd, balance_eth = self.get_balance_ETH(wallet['address'])
-										if balance_usd:
-											user_info = await self.db.get_info_user(chat_id = wallet['chat_id'])
-											await self.db.update_balance_eth(id = wallet['id'], balance = balance_usd, balance_eth = balance_eth)
-											record_history = await self.db.search_history_by_param(_hash = tx_hash)
-											if record_history:
-												pass
-											else:
-												await self.db.add_history_transaction(_from = address_from, _to = address_to, amount = round(eth_amount, 2), _hash = tx_hash)
+				if txs:
+					for transaction in txs['transactions']:
+						if transaction['input']:
+							try:
+								function_signature = transaction['input'][:10]
+								transfer_signature = '0xa9059cbb'
+								address_from = transaction['from']
+								address_to = transaction['to']
+								tx_hash = transaction['hash'].hex()
+								if function_signature == transaction['input'] and transaction['value'] > 0:
+									for wallet in all_wallets:
+										if wallet['address'] == address_from and wallet['outgoing_transactions'] == 1:
+											eth_amount = self.client.from_wei(transaction['value'], 'ether')
+											usd_amount = self.convert_eth_to_usd(eth_amount)
 
-											if user_info and user_info['kicked'] == 0:
-												text = '\n'.join([
-													hbold(f"➖ {str(round(eth_amount, 2))}") + " ETH",
-													"",
-													language("◦ от 	", user_info['language']) + hcode(address_from[:6] + '...' + address_from[-5:]) + "  " + hitalic("(" + wallet['name'] + ")"),
-													language("• на 	", user_info['language']) + hcode(address_to[:6] + '...' + address_to[-5:]),
-													"",
-													language("💵 Баланс: ≈ ", user_info['language']) + str('{0:,}'.format(int(balance_usd)).replace(',', '.')) + " $" + hitalic(f" ({round(balance_eth, 2)} ETH)") if balance_usd else language("Баланс: ") + hcode("0$"),
-													"",
-													hlink(language("ℹ️ Подробнее", user_info['language']), "https://etherscan.io/tx/" + tx_hash),
-													])
-												if user_info['notification'] == 1:
-													await self.bot.send_message(user_info['chat_id'], text = text, disable_web_page_preview = True, disable_notification = True)
-												elif user_info['notification'] == 0:
-													await self.bot.send_message(user_info['chat_id'], text = text, disable_web_page_preview = True, disable_notification = False)
-												# print(Fore.GREEN + "ADDRESS FROM - " + Style.RESET_ALL + Fore.CYAN + str(transaction['from'] + " ("+wallet['name']+")") + Style.RESET_ALL + Fore.GREEN + " | ADDRESS TO - " + Style.RESET_ALL + Fore.MAGENTA + transaction['to'] + Style.RESET_ALL + Fore.GREEN +" | SUM: " + str(eth_amount) + " ETH | Balance: ≈ " + str('{0:,}'.format(int(balance_usd)).replace(',', '.')) + "$" + Style.RESET_ALL)
-											self.block_number = last_block
+											if wallet['amount_filter'] == 0 or float(wallet['amount_filter']) <= float(usd_amount):
+												balance_usd, balance_eth = self.get_balance_ETH(wallet['address'])
+												if balance_usd:
+													user_info = await self.db.get_info_user(chat_id = wallet['chat_id'])
+													await self.db.update_balance_eth(id = wallet['id'], balance = balance_usd, balance_eth = balance_eth)
+													record_history = await self.db.search_history_by_param(_hash = tx_hash)
+													if record_history:
+														pass
+													else:
+														await self.db.add_history_transaction(_from = address_from, _to = address_to, amount = round(eth_amount, 2), _hash = tx_hash)
 
-									elif wallet['address'] == address_to and wallet['input_transactions'] == 1:
-										eth_amount = self.client.from_wei(transaction['value'], 'ether')
-										balance_usd, balance_eth = self.get_balance_ETH(wallet['address'])
+													if user_info and user_info['kicked'] == 0:
+														text = '\n'.join([
+															hbold(f"➖ {str(round(eth_amount, 2))}" + " ETH 🔹 ") + hitalic(f"≈ {usd_amount}$"),
+															"",
+															language("◦ от 	", user_info['language']) + hcode(address_from[:6] + '...' + address_from[-5:]) + "  " + hitalic("(" + wallet['name'] + ")"),
+															language("• на 	", user_info['language']) + hcode(address_to[:6] + '...' + address_to[-5:]),
+															"",
+															language("💵 Баланс: ≈ ", user_info['language']) + str('{0:,}'.format(int(balance_usd)).replace(',', '.')) + " $" + hitalic(f" ({round(balance_eth, 2)} ETH)") if balance_usd else language("Баланс: ") + hcode("0$"),
+															"",
+															hlink(language("ℹ️ Подробнее", user_info['language']), "https://etherscan.io/tx/" + tx_hash),
+															])
+														img = open('data/img/out_eth.png', 'rb')
+														if user_info['notification'] == 1:
+															await self.bot.send_photo(chat_id = user_info['chat_id'], photo = img, caption = text, disable_notification = False)
+															img.close()
+														elif user_info['notification'] == 0:
+															await self.bot.send_photo(chat_id = user_info['chat_id'], photo = img, caption = text, disable_notification = True)
+															img.close()
+														# print(Fore.GREEN + "ADDRESS FROM - " + Style.RESET_ALL + Fore.CYAN + str(transaction['from'] + " ("+wallet['name']+")") + Style.RESET_ALL + Fore.GREEN + " | ADDRESS TO - " + Style.RESET_ALL + Fore.MAGENTA + transaction['to'] + Style.RESET_ALL + Fore.GREEN +" | SUM: " + str(eth_amount) + " ETH | Balance: ≈ " + str('{0:,}'.format(int(balance_usd)).replace(',', '.')) + "$" + Style.RESET_ALL)
+													self.block_number = last_block
 
-										user_info = await self.db.get_info_user(chat_id = wallet['chat_id'])
-										if user_info:
-											await self.db.update_balance_eth(id = wallet['id'], balance = balance_usd, balance_eth = balance_eth)
-											record_history = await self.db.search_history_by_param(_hash = tx_hash)
-											if record_history:
-												pass
-											else:
-												await self.db.add_history_transaction(_from = address_from, _to = address_to, amount = round(eth_amount, 2), _hash = tx_hash)
+										elif wallet['address'] == address_to and wallet['input_transactions'] == 1:
+											eth_amount = self.client.from_wei(transaction['value'], 'ether')
+											usd_amount = self.convert_eth_to_usd(eth_amount)
+											if wallet['amount_filter'] == 0 or float(wallet['amount_filter']) <= float(usd_amount):
+												balance_usd, balance_eth = self.get_balance_ETH(wallet['address'])
+												user_info = await self.db.get_info_user(chat_id = wallet['chat_id'])
+												if user_info:
+													await self.db.update_balance_eth(id = wallet['id'], balance = balance_usd, balance_eth = balance_eth)
+													record_history = await self.db.search_history_by_param(_hash = tx_hash)
+													if record_history:
+														pass
+													else:
+														await self.db.add_history_transaction(_from = address_from, _to = address_to, amount = round(eth_amount, 2), _hash = tx_hash)
 
-											if user_info and user_info['kicked'] == 0:
-												text = '\n'.join([
-													hbold(f"➕ {str(round(eth_amount, 2))}") + " ETH",
-													"",
-													language("◦ от 	", user_info['language']) + hcode(address_from[:6] + '...' + address_from[-5:]),
-													language("• на 	", user_info['language']) + hcode(address_to[:6] + '...' + address_to[-5:]) + "  " + hitalic("(" + wallet['name'] + ")"),
-													"",
-													language("💵 Баланс: ≈ ", user_info['language']) + str('{0:,}'.format(int(balance_usd)).replace(',', '.')) + " $" + hitalic(f" ({round(balance_eth, 2)} ETH)") if balance_usd else language("Баланс: ") + hcode("0$"),
-													"",
-													hlink(language("ℹ️ Подробнее", user_info['language']), "https://etherscan.io/tx/" + tx_hash),
-													])
-												if user_info['notification'] == 1:
-													await self.bot.send_message(user_info['chat_id'], text = text, disable_web_page_preview = True, disable_notification = True)				
-												elif user_info['notification'] == 0:
-													await self.bot.send_message(user_info['chat_id'], text = text, disable_web_page_preview = True, disable_notification = False)				
-												# print(Fore.GREEN + "ADDRESS TO - " + Style.RESET_ALL + Fore.CYAN + str(transaction['to'] + " ("+wallet['name']+")") + Style.RESET_ALL + Fore.GREEN + " | ADDRESS FROM - " + Style.RESET_ALL + Fore.MAGENTA + transaction['from'] + Style.RESET_ALL + Fore.GREEN +" | SUM: " + str(eth_amount) + " ETH | Balance: ≈ " + str('{0:,}'.format(int(balance_usd)).replace(',', '.')) + "$" + Style.RESET_ALL)
-											self.block_number = last_block
-
-						except web3.exceptions.BlockNotFound as e:
-							print(Fore.RED + str(e) + Style.RESET_ALL)
+													if user_info and user_info['kicked'] == 0:
+														text = '\n'.join([
+															hbold(f"➕ {str(round(eth_amount, 2))}" + " ETH 🔹 ") + hitalic(f"≈ {usd_amount}$"),
+															"",
+															language("◦ от 	", user_info['language']) + hcode(address_from[:6] + '...' + address_from[-5:]),
+															language("• на 	", user_info['language']) + hcode(address_to[:6] + '...' + address_to[-5:]) + "  " + hitalic("(" + wallet['name'] + ")"),
+															"",
+															language("💵 Баланс: ≈ ", user_info['language']) + str('{0:,}'.format(int(balance_usd)).replace(',', '.')) + " $" + hitalic(f" ({round(balance_eth, 2)} ETH)") if balance_usd else language("Баланс: ") + hcode("0$"),
+															"",
+															hlink(language("ℹ️ Подробнее", user_info['language']), "https://etherscan.io/tx/" + tx_hash),
+															])
+														img = open('data/img/in_eth.png', 'rb')
+														if user_info['notification'] == 1:
+															await self.bot.send_photo(chat_id = user_info['chat_id'], photo = img, caption = text, disable_notification = False)
+															img.close()				
+														elif user_info['notification'] == 0:
+															await self.bot.send_photo(chat_id = user_info['chat_id'], photo = img, caption = text, disable_notification = True)
+															img.close()		
+														# print(Fore.GREEN + "ADDRESS TO - " + Style.RESET_ALL + Fore.CYAN + str(transaction['to'] + " ("+wallet['name']+")") + Style.RESET_ALL + Fore.GREEN + " | ADDRESS FROM - " + Style.RESET_ALL + Fore.MAGENTA + transaction['from'] + Style.RESET_ALL + Fore.GREEN +" | SUM: " + str(eth_amount) + " ETH | Balance: ≈ " + str('{0:,}'.format(int(balance_usd)).replace(',', '.')) + "$" + Style.RESET_ALL)
+													self.block_number = last_block
+							except web3.exceptions.BlockNotFound as e:
+								# print(Fore.RED + str(e) + Style.RESET_ALL)
+								pass
+							except RuntimeError as e:
+								# print(Fore.RED + str(e) + Style.RESET_ALL)
+								pass
+							except asyncio.CancelledError:
+								pass
+						else:
 							pass
-						except RuntimeError as e:
-							print(Fore.RED + str(e) + Style.RESET_ALL)
-							pass
-						except asyncio.CancelledError:
-							pass
-				self.block_number = last_block
-				await asyncio.sleep(7)
+					self.block_number = last_block
+					await asyncio.sleep(7)

@@ -19,8 +19,8 @@ from misc.translate import language
 from misc.states import StatesAddWallet, StatesEditName
 from misc.filters import IsPrivate, IsAdmin
 from misc.help import keyboard_gen, format_number, chunks_generators
-from misc.callback_data import pagination_callback, addWallet_callback, network_callback, cancel_callback, settings_callback, settingWallet_callback, history_trans_callback, pagination_history_callback
-from misc.callback_data import language_callback, admin_callback, nameWallet_callback, wallet_callback, settingsPage_callback, walletInfo_callback, editWallet_callback, switch_trans_callback, notification_callback
+from misc.callback_data import pagination_callback, addWallet_callback, network_callback, cancel_callback, settings_callback, settingWallet_callback, history_trans_callback, pagination_history_callback, filter_trans_callback
+from misc.callback_data import language_callback, admin_callback, nameWallet_callback, wallet_callback, settingsPage_callback, walletInfo_callback, editWallet_callback, switch_trans_callback, notification_callback, amount_set_callback
 # FILES >
 
 #
@@ -134,6 +134,8 @@ async def create_history_list(db, user_info, id_wallet, p = 0):
 			types.InlineKeyboardButton("◀️", callback_data = pagination_history_callback.new(action = 'left', page = p, all_pages = pages_count, id = id_wallet)),
 			types.InlineKeyboardButton(f"{p + 1} / " + str(pages), callback_data = pagination_history_callback.new(action = 'count', page = 0, all_pages = pages_count, id = id_wallet)),
 			types.InlineKeyboardButton("▶️", callback_data = pagination_history_callback.new(action = 'right', page = p, all_pages = pages_count, id = id_wallet)))
+		keyboard.add(types.InlineKeyboardButton(language("↩️ Назад", user_info['language']), callback_data = walletInfo_callback.new(action = 'StepBack', id = id_wallet)))
+
 	return keyboard
 
 
@@ -152,7 +154,6 @@ async def command_start(message: types.Message, db, user_info, telegram, setting
 	if wallets:
 		keyboard = types.InlineKeyboardMarkup()
 		keyboard.add(types.InlineKeyboardButton(language("🗂 Кошельки", user_info['language']), callback_data = wallet_callback.new(action = "walletsPage")))
-		# keyboard.add(types.InlineKeyboardButton(language("🎛 Настройки бота", user_info['language']), callback_data = settingsPage_callback.new(action = 'settingsPage')))
 		if user_info['is_admin'] > 0:
 			keyboard.add(types.InlineKeyboardButton(language("⚙️ Управление", user_info['language']), callback_data = admin_callback.new(action = 'adm_panel')))
 		await message.bot.send_photo(chat_id = user_info['chat_id'], photo = settings['media'][0]['start'], reply_markup = keyboard)
@@ -175,7 +176,7 @@ async def wallets_call(call: types.CallbackQuery, callback_data: dict, db, user_
 async def wallets(message: types.Message, db, user_info, telegram, settings):
 	wallets = await db.get_users_wallet(chat_id = user_info['chat_id'])
 	if wallets:
-		all_balance = await db.get_total_balance()
+		all_balance = await db.get_total_balance(chat_id = user_info['chat_id'])
 		await message.bot.send_message(user_info['chat_id'], text = language("Всего ≈ ", user_info['language']) + hcode(str('{0:,}'.format(int(all_balance['total'])).replace(',', '.')) + " $"), reply_markup = await create_wallet_list(db, user_info))
 	else:
 		keyboard = types.InlineKeyboardMarkup()
@@ -219,7 +220,6 @@ async def show_info_from_wallet(call: types.CallbackQuery, callback_data: dict, 
 
 	wallet = await db.get_info_wallet(id = callback_data['id'])
 
-	# total_balance = await db.get_total_balance()
 	keyboard = types.InlineKeyboardMarkup()
 	keyboard.add(
 				types.InlineKeyboardButton(language("🗓 Транзакции", user_info['language']), callback_data = history_trans_callback.new(action = 'trans_history', id = callback_data['id'])),
@@ -242,6 +242,7 @@ async def page_settings_wallet(call: types.CallbackQuery, callback_data: dict, d
 	keyboard = types.InlineKeyboardMarkup()
 	keyboard.add(types.InlineKeyboardButton(language("⬇️ Доходные транзации: ВКЛ", user_info['language']) if wallet['input_transactions'] == 1 else language("⬇️ Доходные транзации: ВЫКЛ", user_info['language']), callback_data = switch_trans_callback.new(action = 'input', id = callback_data['id'])))
 	keyboard.add(types.InlineKeyboardButton(language("⬆️ Расходные транзакции: ВКЛ", user_info['language']) if wallet['outgoing_transactions'] == 1 else language("⬆️ Расходные транзакции: ВЫКЛ", user_info['language']), callback_data = switch_trans_callback.new(action = 'output', id = callback_data['id'])))
+	keyboard.add(types.InlineKeyboardButton(language("🎛 Фильтр транзакций: ВЫКЛ", user_info['language']) if wallet['amount_filter'] == 0 else language("🎛 Фильтр транзакций: ", user_info['language']) + str(wallet['amount_filter']) + "$", callback_data = filter_trans_callback.new(action = 'editFilter', id = callback_data['id'])))
 	keyboard.add(
 				types.InlineKeyboardButton(language("✏️ Название", user_info['language']), callback_data = editWallet_callback.new(action = 'editName', id = callback_data['id'])),
 				types.InlineKeyboardButton(language("🗑 Удалить", user_info['language']), callback_data = editWallet_callback.new(action = 'delete', id = callback_data['id'])),
@@ -295,6 +296,31 @@ async def custom_transaction_display(call: types.CallbackQuery, callback_data: d
 		await db.input_transaction_display(id = callback_data['id'], value = "0" if wallet['input_transactions'] == 1 else "1")
 	elif callback_data['action'] == "output":
 		await db.output_transaction_display(id = callback_data['id'], value = "0" if wallet['outgoing_transactions'] == 1 else "1")
+	await page_settings_wallet(call, callback_data, db, user_info, settings, telegram)
+
+async def page_filter_transaction(call: types.CallbackQuery, callback_data: dict, db, user_info, settings, telegram):
+	wallet = await db.get_info_wallet(id = callback_data['id'])
+	keyboard = types.InlineKeyboardMarkup(row_width = 4)
+	keyboard.add(
+				types.InlineKeyboardButton("10$", callback_data = amount_set_callback.new(amount = '10', id = callback_data['id'])),
+				types.InlineKeyboardButton("100$", callback_data = amount_set_callback.new(amount = '100', id = callback_data['id'])),
+				types.InlineKeyboardButton("1000$", callback_data = amount_set_callback.new(amount = '1000', id = callback_data['id'])),
+				types.InlineKeyboardButton("10000$", callback_data = amount_set_callback.new(amount = '10000', id = callback_data['id'])),
+				)
+	keyboard.add(types.InlineKeyboardButton(language("↩️ Назад", user_info['language']), callback_data = walletInfo_callback.new(action = 'StepBack', id = callback_data['id'])))
+
+	text = '\n'.join([
+		hbold(language("🎛 Настройки кошелька ", user_info['language']) + str(wallet['name'])),
+		"",
+		language("Выбери сумму, меньше которой не нужно уведомлять о транзакциях", user_info['language']),
+		hitalic(language("Нажмите на ту же сумму, чтобы выключить фильтр", user_info['language'])),
+		])
+
+	await call.bot.edit_message_text(chat_id = user_info['chat_id'], message_id = call.message.message_id, text = text, reply_markup = keyboard)
+
+async def custom_transaction_filter(call: types.CallbackQuery, callback_data: dict, db, user_info, settings, telegram):
+	wallet = await db.get_info_wallet(id = callback_data['id'])
+	await db.update_transaction_filter(id = callback_data['id'], value = callback_data['amount'] if int(wallet['amount_filter']) != int(callback_data['amount']) else "0")
 	await page_settings_wallet(call, callback_data, db, user_info, settings, telegram)
 
 async def edit_name_wallet(call: types.CallbackQuery, callback_data: dict, db, user_info, settings, telegram, state: FSMContext):
@@ -403,11 +429,11 @@ async def getting_TronAddress(message: types.Message, db, user_info, settings, t
 								language("▪ Он будет отображаться в списке ваших кошельков", user_info['language']),
 								language("▪ Вы будете получать уведомления о новых транзакциях", user_info['language']),
 								"",
-								language("Адресс: ") + hcode(address[:6] + '...' + address[-5:]),
-								language("Баланс: ") + hcode(str('{0:,}'.format(int(balance)).replace(',', '.')) + " $") if balance else language("Баланс: ") + hcode("0$"),
-								language("Название: ") + hcode(nameWallet),
+								language("Адресс: ", user_info['language']) + hcode(address[:6] + '...' + address[-5:]),
+								language("Баланс: ", user_info['language']) + hcode(str('{0:,}'.format(int(balance)).replace(',', '.')) + " $") if balance else language("Баланс: ") + hcode("0$"),
+								language("Название: ", user_info['language']) + hcode(nameWallet),
 								"",
-								hitalic(language("⌨️ Придумайте название для кошелька")),
+								hitalic(language("⌨️ Придумайте название для кошелька", user_info['language'])),
 								])
 
 							await message.bot.edit_message_text(chat_id = user_info['chat_id'], message_id = msg.message_id, text = text, reply_markup = keyboard)
@@ -469,11 +495,11 @@ async def getting_EthAddress(message: types.Message, db, user_info, settings, te
 								language("▪ Он будет отображаться в списке ваших кошельков", user_info['language']),
 								language("▪ Вы будете получать уведомления о новых транзакциях", user_info['language']),
 								"",
-								language("Адресс: ") + hcode(address[:6] + '...' + address[-5:]),
-								language("Баланс: ") + hcode(str('{0:,}'.format(int(balance)).replace(',', '.')) + " $") + hcode(f" ({round(amount_eth, 2)} ETH)") if balance else language("Баланс: ") + hcode("0$"),
-								language("Название: ") + hcode(nameWallet),
+								language("Адресс: ", user_info['language']) + hcode(address[:6] + '...' + address[-5:]),
+								language("Баланс: ", user_info['language']) + hcode(str('{0:,}'.format(int(balance)).replace(',', '.')) + " $") + hcode(f" ({round(amount_eth, 2)} ETH)") if balance else language("Баланс: ") + hcode("0$"),
+								language("Название: ", user_info['language']) + hcode(nameWallet),
 								"",
-								hitalic(language("⌨️ Придумайте название для кошелька")),
+								hitalic(language("⌨️ Придумайте название для кошелька"), user_info['language']),
 								])
 
 							await message.bot.edit_message_text(chat_id = user_info['chat_id'], message_id = msg.message_id, text = text, reply_markup = keyboard)
@@ -564,7 +590,6 @@ async def setting_value(call: types.CallbackQuery, callback_data: dict, db, user
 	elif callback_data['action'] == "back":
 		await page_settings(call, db, user_info, telegram, settings)
 
-
 async def lang_selection(call: types.CallbackQuery, callback_data: dict, db, user_info, settings, telegram):
 	await db.set_language(chat_id = user_info['chat_id'], lang = callback_data['lang'])
 	user_info = await db.get_info_user(chat_id = user_info['chat_id'])
@@ -579,6 +604,8 @@ def register_user(dp: Dispatcher):
 	dp.register_callback_query_handler(callback_pagination, pagination_callback.filter())
 	dp.register_callback_query_handler(show_info_from_wallet, walletInfo_callback.filter(), state = "*")
 	dp.register_callback_query_handler(custom_transaction_display, switch_trans_callback.filter())
+	dp.register_callback_query_handler(page_filter_transaction, filter_trans_callback.filter())
+	dp.register_callback_query_handler(custom_transaction_filter, amount_set_callback.filter())
 	dp.register_callback_query_handler(edit_name_wallet, editWallet_callback.filter())
 	dp.register_message_handler(get_new_name_wallet, IsPrivate(), state = StatesEditName.get_name, content_types = types.ContentTypes.ANY)
 	dp.register_callback_query_handler(page_settings_wallet, settingWallet_callback.filter())

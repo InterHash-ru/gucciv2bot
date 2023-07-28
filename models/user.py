@@ -70,9 +70,9 @@ class User:
 		sql = "UPDATE wallets SET name = %s WHERE address = %s AND chat_id = %s"
 		return await self.execute(sql, (name, address, chat_id), execute = True)
 
-	async def get_total_balance(self):
-		sql = "SELECT SUM(balance) as total FROM wallets"
-		return await self.execute(sql, fetchrow = True)
+	async def get_total_balance(self, chat_id):
+		sql = "SELECT SUM(balance) as total FROM wallets WHERE chat_id = %s"
+		return await self.execute(sql, (chat_id), fetchrow = True)
 
 	async def update_balance(self, id, balance):
 		sql = "UPDATE wallets SET balance = %s WHERE id = %s"
@@ -84,6 +84,10 @@ class User:
 
 	async def input_transaction_display(self, id, value):
 		sql = "UPDATE wallets SET input_transactions = %s WHERE id = %s"
+		return await self.execute(sql, (value, id), execute = True)
+
+	async def update_transaction_filter(self, id, value):
+		sql = "UPDATE wallets SET amount_filter = %s WHERE id = %s"
 		return await self.execute(sql, (value, id), execute = True)
 
 	async def output_transaction_display(self, id, value):

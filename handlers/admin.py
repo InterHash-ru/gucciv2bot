@@ -111,8 +111,11 @@ async def page_statistics(call: types.CallbackQuery, callback_data: dict, db, us
 	kicked = await db.get_stats_count(table = "users", kicked = "1")
 	admins = await db.get_stats_count(table = "users", separator = ">=", is_admin = "1")
 
+	all_wallets = await db.get_stats_count(table = "wallets")
+	all_tron_wallet = await db.get_count_TRON_Wallet()
+	all_eth_wallet = await db.get_count_ETH_Wallet()
 
-
+	all_transaction = await db.get_stats_count(table = "history_transaction")
 
 	text = "\n".join([
 		hbold("📈 Статистика"),
@@ -126,6 +129,12 @@ async def page_statistics(call: types.CallbackQuery, callback_data: dict, db, us
 		#
 		hitalic("▪️ которые пользуются ботом: ") + hbold(format_number(action['count'])) + hitalic(" чел."),
 		hitalic("▪️ которые остановили бота: ") + hbold(format_number(kicked['count'])) + hitalic(" чел."),
+		"",
+		"Общее кол-во",
+		hitalic("▪️ кошельков: ") + hbold(format_number(all_wallets['count'])) + hitalic(" шт."),
+		hitalic("▪️ USDT: ") + hbold(format_number(all_tron_wallet['count'])) + hitalic(" шт."),
+		hitalic("▪️ ETH: ") + hbold(format_number(all_eth_wallet['count'])) + hitalic(" шт."),
+		hitalic("▪️ всего транзакций: ") + hbold(format_number(all_transaction['count'])) + hitalic(" шт."),
 		"",
 		hbold("Общее кол-во"),
 		hitalic("▫️ администраторов: ") + hbold(format_number(admins['count'])) + hitalic(" чел."),
