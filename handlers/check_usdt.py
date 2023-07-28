@@ -11,7 +11,7 @@ from misc.translate import language
 from tronpy.providers import HTTPProvider
 from aiogram.utils.markdown import hbold, hcode, hitalic, hunderline, hstrikethrough, hlink
 init()
-os.system("cls")
+#os.system("cls")
 
 
 class CheckTransactions():
@@ -55,7 +55,7 @@ class CheckTransactions():
 			last_block = self.client.get_latest_block_number()
 			if self.block_number < last_block:
 				txs = self.client.get_block(last_block)
-				print("[USDT] BLOCK №" + str(last_block))
+#				print("[USDT] BLOCK №" + str(last_block))
 				if txs['transactions']:
 					for transaction in txs['transactions']:
 						value = transaction['raw_data']['contract'][0]['parameter']['value']

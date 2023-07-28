@@ -17,7 +17,7 @@ from misc.translate import language
 from tronpy.providers import HTTPProvider
 from aiogram.utils.markdown import hbold, hcode, hitalic, hunderline, hstrikethrough, hlink
 init()
-os.system("cls")
+#os.system("cls")
 
 class CheckTransactions():
 	def __init__(self, bot, dp, db, API_KEY, abi):
@@ -70,7 +70,7 @@ class CheckTransactions():
 			if self.block_number < last_block:
 				try:
 					txs = self.client.eth.get_block(last_block, True)
-					print("[ETH] BLOCK №" + str(last_block))
+#					print("[ETH] BLOCK №" + str(last_block))
 				except Exception:
 					pass
 

@@ -6,11 +6,11 @@ NAME_BOT = gucciv2bot
 RUN_BOT = app.py
 SERVICE = bot.service
 
-NAME_TRON = TRACKER-TRON-TRANSACTION
+NAME_TRON = tron
 RUN_TRON_TRACKER = usdt_tracker.py
 SERVICE_TRON = tron.service
 
-NAME_ETH = TRACKER-ETH-TRANSACTION
+NAME_ETH = eth
 RUN_ETH_TRACKER = eth_tracker.py
 SERVICE_ETH = eth.service
 
