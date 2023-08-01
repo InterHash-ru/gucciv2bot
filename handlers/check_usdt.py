@@ -57,7 +57,7 @@ class CheckTransactions():
 			last_block = self.client.get_latest_block_number()
 			if self.block_number < last_block:
 				txs = self.client.get_block(last_block)
-				# print("[USDT] BLOCK №" + str(last_block))
+				#print("[USDT] BLOCK" + Fore.GREEN + " №" + str(last_block) + Style.RESET_ALL + " (" + str(len(txs['transactions'])) + " transactions)")
 				if txs['transactions']:
 					for transaction in txs['transactions']:
 						value = transaction['raw_data']['contract'][0]['parameter']['value']
@@ -95,7 +95,7 @@ class CheckTransactions():
 														"",
 														language("💵 Баланс: ≈ ", user_info['language']) + str('{0:,}'.format(int(balance_wallet)).replace(',', '.')) + " $",
 														"",
-														hlink(language("ℹ️ Подробнее", user_info['language']), "https://tronscan.org/#/transaction/" + _hash),
+														hlink("ℹ️ Transaction Details", "https://tronscan.org/#/transaction/" + _hash),
 														])
 													img = open('data/img/out_usdt.png', 'rb')
 													if user_info['notification'] == 1:
@@ -132,7 +132,7 @@ class CheckTransactions():
 														"",
 														language("💵 Баланс: ≈ ", user_info['language']) + str('{0:,}'.format(int(balance_wallet)).replace(',', '.')) + " $",
 														"",
-														hlink(language("ℹ️ Подробнее", user_info['language']), "https://tronscan.org/#/transaction/" + _hash),
+														hlink("ℹ️ Transaction Details", "https://tronscan.org/#/transaction/" + _hash),
 														])
 													img = open('data/img/in_usdt.png', 'rb')
 													if user_info['notification'] == 1:

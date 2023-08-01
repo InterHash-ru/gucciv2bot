@@ -54,9 +54,9 @@ class User:
 		sql = "SELECT * FROM wallets WHERE id = %s"
 		return await self.execute(sql, (id), fetchone = True)
 
-	async def add_NEWWallet(self, address, network, balance, name, chat_id):
-		sql = "INSERT INTO wallets (address, network, balance, name, chat_id) VALUES (%s, %s, %s, %s, %s)"
-		return await self.execute(sql, (address, network, balance, name, chat_id), execute = True)
+	async def add_NEWWallet(self, address, network, balance, balance_usdt_tokens, balance_eth, name, chat_id):
+		sql = "INSERT INTO wallets (address, network, balance, balance_usdt_tokens, balance_eth, name, chat_id) VALUES (%s, %s, %s, %s, %s, %s, %s)"
+		return await self.execute(sql, (address, network, balance, balance_usdt_tokens, balance_eth, name, chat_id), execute = True)
 
 	async def add_ethWallet(self, address, network, chat_id):
 		sql = "INSERT INTO wallets (address, network, chat_id) VALUES (%s, %s, %s)"
@@ -82,6 +82,10 @@ class User:
 		sql = "UPDATE wallets SET balance = %s, balance_eth = %s WHERE id = %s"
 		return await self.execute(sql, (balance, balance_eth, id), execute = True)
 
+	async def update_balance_usdt_token(self, id, balance_usdtTokens, balance):
+		sql = "UPDATE wallets SET balance_usdt_tokens = %s, balance = %s WHERE id = %s"
+		return await self.execute(sql, (balance_usdtTokens, balance, id), execute = True)
+
 	async def input_transaction_display(self, id, value):
 		sql = "UPDATE wallets SET input_transactions = %s WHERE id = %s"
 		return await self.execute(sql, (value, id), execute = True)
@@ -92,6 +96,14 @@ class User:
 
 	async def output_transaction_display(self, id, value):
 		sql = "UPDATE wallets SET outgoing_transactions = %s WHERE id = %s"
+		return await self.execute(sql, (value, id), execute = True)
+
+	async def usdt_trans_filter(self, id, value):
+		sql = "UPDATE wallets SET transfer_usdt = %s WHERE id = %s"
+		return await self.execute(sql, (value, id), execute = True)
+
+	async def eth_trans_filter(self, id, value):
+		sql = "UPDATE wallets SET transfer_eth = %s WHERE id = %s"
 		return await self.execute(sql, (value, id), execute = True)
 
 	async def delete_wallet(self, id):

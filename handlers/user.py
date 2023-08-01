@@ -19,7 +19,7 @@ from misc.translate import language
 from misc.states import StatesAddWallet, StatesEditName
 from misc.filters import IsPrivate, IsAdmin
 from misc.help import keyboard_gen, format_number, chunks_generators
-from misc.callback_data import pagination_callback, addWallet_callback, network_callback, cancel_callback, settings_callback, settingWallet_callback, history_trans_callback, pagination_history_callback, filter_trans_callback
+from misc.callback_data import pagination_callback, addWallet_callback, network_callback, cancel_callback, settings_callback, settingWallet_callback, history_trans_callback, pagination_history_callback, filter_trans_callback, transfer_network_callback
 from misc.callback_data import language_callback, admin_callback, nameWallet_callback, wallet_callback, settingsPage_callback, walletInfo_callback, editWallet_callback, switch_trans_callback, notification_callback, amount_set_callback
 # FILES >
 
@@ -60,14 +60,11 @@ def is_validate_USDTaddress(address):
 	except:
 		return False
 
-def is_validate_ETHaddress(address):
-	pattern = r'^(0x)?[0-9a-fA-F]{40}$'    
-	# return bool(re.match(pattern, address))
-	if re.match(pattern, address):
-		return address
-	else:
-		return False
-
+def is_validate_ETHaddress(address, api):
+	web3 = Web3(Web3.HTTPProvider("https://mainnet.infura.io/v3/" + api['infura']))
+	wallet = web3.is_checksum_address(address)
+	return address if wallet else False
+	
 def get_balance_USDT(address, API_KEY):
 	payload = {
 		"address": address
@@ -85,7 +82,7 @@ def get_balance_USDT(address, API_KEY):
 	else:
 		return False
 
-def get_balance_ETH(address, API_KEY, infura):
+def get_balance_ETH(address, infura):
 	try:
 		web3 = Web3(Web3.HTTPProvider("https://mainnet.infura.io/v3/" + infura))
 		balance = web3.eth.get_balance(address)
@@ -95,6 +92,16 @@ def get_balance_ETH(address, API_KEY, infura):
 		return balance_usd, amount_eth
 	except :
 		return False
+
+def get_balance_usdt_token(address, infura, abi):
+		try:
+			web3 = Web3(Web3.HTTPProvider("https://mainnet.infura.io/v3/" + infura))
+			contract = web3.eth.contract(address = Web3.to_checksum_address("0xdac17f958d2ee523a2206206994597c13d831ec7"), abi = abi)
+			balance_usdt_tokens = contract.functions.balanceOf(address).call()
+			balance_usdt_tokens = int(balance_usdt_tokens / (10 ** 6))
+			return balance_usdt_tokens
+		except:
+			return False
 
 def convert_to_decimal(amount, decimal = 6):
 	return int(amount * (10 ** decimal))
@@ -109,7 +116,15 @@ async def create_wallet_list(db, user_info, p = 0):
 	keyboard = types.InlineKeyboardMarkup()
 	for item in array[p]:
 		network = "🔸" if item['network'] == "TRON" else "🔹"
-		keyboard.add(types.InlineKeyboardButton(network + "    " + item['name'] + "    " + str('{0:,}'.format(int(item['balance'])).replace(',', ' ')) + " $", callback_data = walletInfo_callback.new(action = "info", id = item['id'])))
+		if item['network'] == "ETH":
+			if item['transfer_usdt'] == 1:
+				balance = str('{0:,}'.format(int(item['balance_usdt_tokens'])).replace(',', ',')) + " USDT"
+			else:
+				balance = str('{0:,}'.format(int(item['balance'])).replace(',', ',')) + " $"
+		else:
+			balance = str('{0:,}'.format(int(item['balance'])).replace(',', ',')) + " $"
+
+		keyboard.add(types.InlineKeyboardButton(network + "    " + item['name'] + "    " + balance, callback_data = walletInfo_callback.new(action = "info", id = item['id'])))
 	if len(array) > 1:
 		keyboard.add(
 			types.InlineKeyboardButton("◀️", callback_data = pagination_callback.new(action = 'left', page = p, all_pages = pages_count)),
@@ -124,11 +139,12 @@ async def create_history_list(db, user_info, id_wallet, p = 0):
 	pages = len(array)
 	pages_count = str(pages - 1)
 	keyboard = types.InlineKeyboardMarkup()
+	url = "https://tronscan.org/#/transaction/" if wallet['network'] == "TRON" else "https://etherscan.io/tx/"
 	for item in array[p]:
 		direction = "⬇️" if item['_to'] == wallet['address'] else "⬆️"
 		_from = item['_from'][:4] + '...' + item['_from'][-5:]
 		_to = item['_to'][:4] + '...' + item['_to'][-5:]
-		keyboard.add(types.InlineKeyboardButton(direction + "   from: " + _from + "   to: " + _to +"   SUM: " + str('{0:,}'.format(int(item['amount'])).replace(',', '.')) + " $", url = "https://tronscan.org/#/transaction/" + item['hash_trans']))
+		keyboard.add(types.InlineKeyboardButton(direction + "   from: " + _from + "   to: " + _to +"   SUM: " + str('{0:,}'.format(int(item['amount'])).replace(',', '.')) + " $", url = url + item['hash_trans']))
 	if len(array) > 1:
 		keyboard.add(
 			types.InlineKeyboardButton("◀️", callback_data = pagination_history_callback.new(action = 'left', page = p, all_pages = pages_count, id = id_wallet)),
@@ -212,14 +228,13 @@ async def callback_pagination(call: types.CallbackQuery, callback_data: dict, db
 		reply_markup	= markup
 		)
 
-async def show_info_from_wallet(call: types.CallbackQuery, callback_data: dict, db, user_info, state: FSMContext):
+async def show_info_from_wallet(call: types.CallbackQuery, callback_data: dict, db, user_info, api, abi, state: FSMContext):
 	try:
 		await state.finish()
 	except:
 		pass
 
 	wallet = await db.get_info_wallet(id = callback_data['id'])
-
 	keyboard = types.InlineKeyboardMarkup()
 	keyboard.add(
 				types.InlineKeyboardButton(language("🗓 Транзакции", user_info['language']), callback_data = history_trans_callback.new(action = 'trans_history', id = callback_data['id'])),
@@ -228,13 +243,23 @@ async def show_info_from_wallet(call: types.CallbackQuery, callback_data: dict, 
 				)
 	keyboard.add(types.InlineKeyboardButton(language("↩️ Назад", user_info['language']), callback_data = wallet_callback.new(action = 'back')))
 
-	text = '\n'.join([
-		hbold("🔹" + wallet['name']) if wallet['network'] == "TRON" else hbold("🔸" + wallet['name']),
-		"",
-		language("🏦 Баланс: ≈ ", user_info['language']) + hitalic(str('{0:,}'.format(int(wallet['balance'])).replace(',', '.')) + " $"),
-		"",
-		hcode(wallet['address']),
-		])
+	if wallet['network'] == "ETH":
+		text = '\n'.join([
+			hbold("🔹" + wallet['name']) if wallet['network'] == "ETH" else hbold("🔸" + wallet['name']),
+			"",
+			language("💵 Баланс ETH: ≈ ", user_info['language']) + str('{0:,}'.format(int(wallet['balance'])).replace(',', ',')) + " $" + hitalic(f" ({round(wallet['balance_eth'], 2)} ETH)") if int(wallet['balance']) > 0 else language("💵 Баланс ETH: ") + hcode("0$"),
+			language("💲 Баланс USDT: ", user_info['language']) + str('{0:,}'.format(int(wallet['balance_usdt_tokens'])).replace(',', ',')) + " USDT" if wallet['balance_usdt_tokens'] else language("💲 Баланс USDT: ", user_info['language']) + hcode("0 USDT"),
+			"",
+			hcode(wallet['address']),
+			])
+	elif wallet['network'] == "TRON":
+		text = '\n'.join([
+			hbold("🔹" + wallet['name']) if wallet['network'] == "ETH" else hbold("🔸" + wallet['name']),
+			"",
+			language("🏦 Баланс: ≈ ", user_info['language']) + hitalic(str('{0:,}'.format(int(wallet['balance'])).replace(',', '.')) + " $"),			"",
+			"",
+			hcode(wallet['address']),
+			])
 	await call.bot.edit_message_text(chat_id = user_info['chat_id'], message_id = call.message.message_id, text = text, reply_markup = keyboard, disable_web_page_preview = True)
 
 async def page_settings_wallet(call: types.CallbackQuery, callback_data: dict, db, user_info, settings, telegram):
@@ -243,6 +268,11 @@ async def page_settings_wallet(call: types.CallbackQuery, callback_data: dict, d
 	keyboard.add(types.InlineKeyboardButton(language("⬇️ Доходные транзации: ВКЛ", user_info['language']) if wallet['input_transactions'] == 1 else language("⬇️ Доходные транзации: ВЫКЛ", user_info['language']), callback_data = switch_trans_callback.new(action = 'input', id = callback_data['id'])))
 	keyboard.add(types.InlineKeyboardButton(language("⬆️ Расходные транзакции: ВКЛ", user_info['language']) if wallet['outgoing_transactions'] == 1 else language("⬆️ Расходные транзакции: ВЫКЛ", user_info['language']), callback_data = switch_trans_callback.new(action = 'output', id = callback_data['id'])))
 	keyboard.add(types.InlineKeyboardButton(language("🎛 Фильтр транзакций: ВЫКЛ", user_info['language']) if wallet['amount_filter'] == 0 else language("🎛 Фильтр транзакций: ", user_info['language']) + str(wallet['amount_filter']) + "$", callback_data = filter_trans_callback.new(action = 'editFilter', id = callback_data['id'])))
+	if wallet['network'] == "ETH":
+		keyboard.add(
+					types.InlineKeyboardButton("USDT: ✅" if wallet['transfer_usdt'] == 1 else "USDT: ❌", callback_data = transfer_network_callback.new(action = 'usdt', id = callback_data['id'])),
+					types.InlineKeyboardButton("ETH: ✅" if wallet['transfer_eth'] == 1 else "ETH: ❌", callback_data = transfer_network_callback.new(action = 'eth', id = callback_data['id'])),
+					)
 	keyboard.add(
 				types.InlineKeyboardButton(language("✏️ Название", user_info['language']), callback_data = editWallet_callback.new(action = 'editName', id = callback_data['id'])),
 				types.InlineKeyboardButton(language("🗑 Удалить", user_info['language']), callback_data = editWallet_callback.new(action = 'delete', id = callback_data['id'])),
@@ -302,6 +332,9 @@ async def page_filter_transaction(call: types.CallbackQuery, callback_data: dict
 	wallet = await db.get_info_wallet(id = callback_data['id'])
 	keyboard = types.InlineKeyboardMarkup(row_width = 4)
 	keyboard.add(
+				types.InlineKeyboardButton("1$", callback_data = amount_set_callback.new(amount = '1', id = callback_data['id'])),
+				types.InlineKeyboardButton("3$", callback_data = amount_set_callback.new(amount = '3', id = callback_data['id'])),
+				types.InlineKeyboardButton("5$", callback_data = amount_set_callback.new(amount = '5', id = callback_data['id'])),
 				types.InlineKeyboardButton("10$", callback_data = amount_set_callback.new(amount = '10', id = callback_data['id'])),
 				types.InlineKeyboardButton("100$", callback_data = amount_set_callback.new(amount = '100', id = callback_data['id'])),
 				types.InlineKeyboardButton("1000$", callback_data = amount_set_callback.new(amount = '1000', id = callback_data['id'])),
@@ -309,10 +342,12 @@ async def page_filter_transaction(call: types.CallbackQuery, callback_data: dict
 				)
 	keyboard.add(types.InlineKeyboardButton(language("↩️ Назад", user_info['language']), callback_data = walletInfo_callback.new(action = 'StepBack', id = callback_data['id'])))
 
+	network_emoji = " 🔹" if wallet['network'] == "ETH" else " 🔸"
 	text = '\n'.join([
-		hbold(language("🎛 Настройки кошелька ", user_info['language']) + str(wallet['name'])),
+		hbold(language("🎛 Настройки кошелька ", user_info['language']) + str(wallet['name'])) + network_emoji,
 		"",
 		language("Выбери сумму, меньше которой не нужно уведомлять о транзакциях", user_info['language']),
+		"",
 		hitalic(language("Нажмите на ту же сумму, чтобы выключить фильтр", user_info['language'])),
 		])
 
@@ -321,6 +356,14 @@ async def page_filter_transaction(call: types.CallbackQuery, callback_data: dict
 async def custom_transaction_filter(call: types.CallbackQuery, callback_data: dict, db, user_info, settings, telegram):
 	wallet = await db.get_info_wallet(id = callback_data['id'])
 	await db.update_transaction_filter(id = callback_data['id'], value = callback_data['amount'] if int(wallet['amount_filter']) != int(callback_data['amount']) else "0")
+	await page_settings_wallet(call, callback_data, db, user_info, settings, telegram)
+
+async def custom_network_transaction_filter(call: types.CallbackQuery, callback_data: dict, db, user_info, settings, telegram):
+	wallet = await db.get_info_wallet(id = callback_data['id'])
+	if callback_data['action'] == "usdt":
+		await db.usdt_trans_filter(id = callback_data['id'], value = 0 if wallet['transfer_usdt'] == 1 else 1)
+	elif callback_data['action'] == "eth":
+		await db.eth_trans_filter(id = callback_data['id'], value = 0 if wallet['transfer_eth'] == 1 else 1)
 	await page_settings_wallet(call, callback_data, db, user_info, settings, telegram)
 
 async def edit_name_wallet(call: types.CallbackQuery, callback_data: dict, db, user_info, settings, telegram, state: FSMContext):
@@ -420,7 +463,7 @@ async def getting_TronAddress(message: types.Message, db, user_info, settings, t
 							amt_wallet = await db.get_count_TRON_Wallet()
 							nameWallet = "TRON_WALLET_" + str(int(amt_wallet['count']) + 1) if amt_wallet else "TRON_WALLET_1"
 
-							await db.add_NEWWallet(address = address, network = "TRON", balance = round(balance, 2), name = nameWallet, chat_id = user_info['chat_id'])
+							await db.add_NEWWallet(address = address, network = "ETH", balance = round(balance_usd, 2), balance_usdt_tokens = 0, balance_eth = 0, name = nameWallet, chat_id = user_info['chat_id'])
 							keyboard = types.InlineKeyboardMarkup()
 							keyboard.add(types.InlineKeyboardButton(language("Оставить это название", user_info['language']), callback_data = nameWallet_callback.new(action = "editName")))				
 							text = '\n'.join([
@@ -458,7 +501,7 @@ async def getting_TronAddress(message: types.Message, db, user_info, settings, t
 			await message.reply(language("⚠️ Поддерживается исключительно текст", user_info['language']))
 			array['try'] += 1
 
-async def getting_EthAddress(message: types.Message, db, user_info, settings, telegram, api, state: FSMContext):
+async def getting_EthAddress(message: types.Message, db, user_info, settings, telegram, api, abi, state: FSMContext):
 	async with state.proxy() as array:
 		if message.text:
 			if array['try'] >= 3:
@@ -468,7 +511,7 @@ async def getting_EthAddress(message: types.Message, db, user_info, settings, te
 				await message.reply(language("🔉 Время блокировки вышло" + str(error), user_info['language']))
 				await command_start(message, db, user_info, telegram, settings)
 
-			address = is_validate_ETHaddress(address = message.text)
+			address = is_validate_ETHaddress(address = message.text, api = api)
 			if address:
 				msg = await message.bot.send_message(chat_id = user_info['chat_id'], text = language("📲 Загружаю кошелек...", user_info['language']))
 				if await db.search_dublicate(address = address, chat_id = user_info['chat_id']):
@@ -478,15 +521,15 @@ async def getting_EthAddress(message: types.Message, db, user_info, settings, te
 					await message.bot.delete_message(user_info['chat_id'], msg.message_id)
 					array['try'] += 1
 				else:
-					balance, amount_eth = get_balance_ETH(address, api['etherscan'], api['infura'])
-					if balance != False:
+					balance_usd, balance_eth = get_balance_ETH(address, api['infura'])
+					balance_usdt_tokens = get_balance_usdt_token(address, api['infura'], abi)
+					if balance_usd != False:
 						try:
-							array['address'] = address
-							array['balance'] = round(balance, 2)
+							array['address'], array['balance_usd'], array['balance_eth'], array['balance_usdt_tokens'] = address, balance_usd, balance_eth, balance_usdt_tokens
 							amt_wallet = await db.get_count_ETH_Wallet()
 							nameWallet = "ETH_WALLET_" + str(int(amt_wallet['count']) + 1) if amt_wallet else "ETH_WALLET_1"
 
-							await db.add_NEWWallet(address = address, network = "ETH", balance = round(balance, 2), name = nameWallet, chat_id = user_info['chat_id'])
+							await db.add_NEWWallet(address = address, network = "ETH", balance = round(balance_usd, 2), balance_usdt_tokens = balance_usdt_tokens, balance_eth = balance_eth, name = nameWallet, chat_id = user_info['chat_id'])
 							keyboard = types.InlineKeyboardMarkup()
 							keyboard.add(types.InlineKeyboardButton(language("Оставить это название", user_info['language']), callback_data = nameWallet_callback.new(action = "editName")))				
 							text = '\n'.join([
@@ -496,7 +539,8 @@ async def getting_EthAddress(message: types.Message, db, user_info, settings, te
 								language("▪ Вы будете получать уведомления о новых транзакциях", user_info['language']),
 								"",
 								language("Адресс: ", user_info['language']) + hcode(address[:6] + '...' + address[-5:]),
-								language("Баланс: ", user_info['language']) + hcode(str('{0:,}'.format(int(balance)).replace(',', '.')) + " $") + hcode(f" ({round(amount_eth, 2)} ETH)") if balance else language("Баланс: ") + hcode("0$"),
+								language("💵 Баланс ETH: ≈ ", user_info['language']) + str('{0:,}'.format(int(balance_usd)).replace(',', ',')) + " $" + hitalic(f" ({round(balance_eth, 2)} ETH)") if balance_usd else language("💵 Баланс ETH: ") + hcode("0$"),
+								language("💲 Баланс USDT: ", user_info['language']) + str('{0:,}'.format(int(balance_usdt_tokens)).replace(',', ',')) + " USDT" if balance_usdt_tokens > 0 else language("💲 Баланс USDT: ", user_info['language']) + hcode("0 USDT"),
 								language("Название: ", user_info['language']) + hcode(nameWallet),
 								"",
 								hitalic(language("⌨️ Придумайте название для кошелька"), user_info['language']),
@@ -509,7 +553,7 @@ async def getting_EthAddress(message: types.Message, db, user_info, settings, te
 							await message.bot.delete_message(user_info['chat_id'], msg.message_id)
 							await state.finish()
 							await command_start(message, db, user_info, telegram, settings)
-					elif balance == False:
+					elif balance_usd == False:
 						keyboard = types.InlineKeyboardMarkup()
 						keyboard.add(types.InlineKeyboardButton(language("✖️ Отмена", user_info['language']), callback_data = cancel_callback.new(action = 'cancel')))
 						await message.reply(language("⚠️ НЕ УДАЛОСЬ ПОЛУЧИТЬ БАЛАНС\n▪️ Попробуйте ещё раз", user_info['language']), reply_markup = keyboard)
@@ -543,13 +587,15 @@ async def name_fromWallet(message: types.Message, db, user_info, settings, teleg
 					language("▪ Вы будете получать уведомления о новых транзакциях", user_info['language']),
 					"",
 					language("Адресс: ") + hcode(array['address'][:4] + '...' + array['address'][-5:]),
-					language("Баланс: ") + hcode(str(round(array['balance'], 2)) + "$"),
+					language("💵 Баланс ETH: ≈ ", user_info['language']) + str('{0:,}'.format(int(array['balance_usd'])).replace(',', ',')) + " $" + hitalic(f" ({round(array['balance_eth'], 2)} ETH)") if array['balance_usd'] else language("💵 Баланс ETH: ") + hcode("0$"),
+					language("💲 Баланс USDT: ", user_info['language']) + str('{0:,}'.format(int(array['balance_usdt_tokens'])).replace(',', ',')) + " USDT" if array['balance_usdt_tokens'] > 0 else language("💲 Баланс USDT: ", user_info['language']) + hcode("0 USDT"),
 					language("Название: ") + hcode(message.text),
 					"",
 					])
 				await message.bot.delete_message(user_info['chat_id'], message.message_id - 1)
 				await message.bot.send_message(chat_id = user_info['chat_id'], text = text)
 				await state.finish()
+				await wallets(message, db, user_info, telegram, settings)
 	else:
 		await message.reply(language("⚠️ Поддерживается исключительно текст", user_info['language']))
 
@@ -604,6 +650,7 @@ def register_user(dp: Dispatcher):
 	dp.register_callback_query_handler(callback_pagination, pagination_callback.filter())
 	dp.register_callback_query_handler(show_info_from_wallet, walletInfo_callback.filter(), state = "*")
 	dp.register_callback_query_handler(custom_transaction_display, switch_trans_callback.filter())
+	dp.register_callback_query_handler(custom_network_transaction_filter, transfer_network_callback.filter())
 	dp.register_callback_query_handler(page_filter_transaction, filter_trans_callback.filter())
 	dp.register_callback_query_handler(custom_transaction_filter, amount_set_callback.filter())
 	dp.register_callback_query_handler(edit_name_wallet, editWallet_callback.filter())

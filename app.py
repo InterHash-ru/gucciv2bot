@@ -55,6 +55,7 @@ class BotRunner():
 			"telegram": TELEGRAM,
 			"settings": SETTINGS,
 			"api": API_KEY,
+			"abi": ABI['abi'],
 			"broadcast": Broadcast()
 		}
 		self.dp.middleware.setup(EnvironmentMiddleware(context))

@@ -375,7 +375,7 @@ async def broadcast_notify(message, action):
 				hitalic("⏱ Время рассылки заняло: ") + hbold(str(datetime.now() - broadcast.timer['date_start']).split(".")[0]),
 			])
 
-		await message.answer(text, reply_markup = (keyboard_gen([['◀️ Назад']]) if action != "finish" else None))
+		await message.answer(text)
 
 		text += hitalic("\n\n🤖 Бот: @" + telegram['username'])
 		text += hitalic("\n👤 Запустил: ") + hbold(user_info['fullname'])
