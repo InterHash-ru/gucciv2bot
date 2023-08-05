@@ -190,6 +190,11 @@ async def wallets_call(call: types.CallbackQuery, callback_data: dict, db, user_
 	await wallets(call, db, user_info, telegram, settings)
 
 async def wallets(message: types.Message, db, user_info, telegram, settings):
+	try:
+		await state.finish()
+		await message.bot.delete_message(user_info['chat_id'], message.message_id - 1)
+	except:
+		pass
 	wallets = await db.get_users_wallet(chat_id = user_info['chat_id'])
 	if wallets:
 		all_balance = await db.get_total_balance(chat_id = user_info['chat_id'])
@@ -463,7 +468,7 @@ async def getting_TronAddress(message: types.Message, db, user_info, settings, t
 							amt_wallet = await db.get_count_TRON_Wallet()
 							nameWallet = "TRON_WALLET_" + str(int(amt_wallet['count']) + 1) if amt_wallet else "TRON_WALLET_1"
 
-							await db.add_NEWWallet(address = address, network = "ETH", balance = round(balance_usd, 2), balance_usdt_tokens = 0, balance_eth = 0, name = nameWallet, chat_id = user_info['chat_id'])
+							await db.add_NEWWallet(address = address, network = "TRON", balance = round(balance, 2), balance_usdt_tokens = 0, balance_eth = 0, name = nameWallet, chat_id = user_info['chat_id'])
 							keyboard = types.InlineKeyboardMarkup()
 							keyboard.add(types.InlineKeyboardButton(language("Оставить это название", user_info['language']), callback_data = nameWallet_callback.new(action = "editName")))				
 							text = '\n'.join([
@@ -480,7 +485,7 @@ async def getting_TronAddress(message: types.Message, db, user_info, settings, t
 								])
 
 							await message.bot.edit_message_text(chat_id = user_info['chat_id'], message_id = msg.message_id, text = text, reply_markup = keyboard)
-							await StatesAddWallet.get_name.set()
+							await StatesAddWallet.get_name_tron.set()
 						except Exception as error:
 							await message.reply(language("❌ Ошибка добавления кошелька !\n▪️ Содержимое: " + str(error), user_info['language']))
 							await message.bot.delete_message(user_info['chat_id'], msg.message_id)
@@ -547,7 +552,7 @@ async def getting_EthAddress(message: types.Message, db, user_info, settings, te
 								])
 
 							await message.bot.edit_message_text(chat_id = user_info['chat_id'], message_id = msg.message_id, text = text, reply_markup = keyboard)
-							await StatesAddWallet.get_name.set()
+							await StatesAddWallet.get_name_eth.set()
 						except Exception as error:
 							await message.reply(language("❌ Ошибка добавления кошелька !\n▪️ Содержимое: " + str(error), user_info['language']))
 							await message.bot.delete_message(user_info['chat_id'], msg.message_id)
@@ -573,7 +578,32 @@ async def keep_nameWallet(call: types.CallbackQuery, callback_data: dict, db, us
 	await state.finish()
 	await command_start(call, db, user_info, telegram, settings)
 
-async def name_fromWallet(message: types.Message, db, user_info, settings, telegram, state: FSMContext):
+async def name_from_TRON_Wallet(message: types.Message, db, user_info, settings, telegram, state: FSMContext):
+	if message.text:
+		if len(message.text) > 35:
+			await message.reply(language("⚠️ Слишком большая длинна", user_info['language']), reply_markup = keyboard)
+		else:		
+			async with state.proxy() as array:
+				await db.set_name_wallet(address = array['address'], chat_id = user_info['chat_id'], name = message.text)
+				text = '\n'.join([
+					hbold(language("✅ Кошелек добавлен", user_info['language'])),
+					"",
+					language("▪ Он будет отображаться в списке ваших кошельков", user_info['language']),
+					language("▪ Вы будете получать уведомления о новых транзакциях", user_info['language']),
+					"",
+					language("Адресс: ") + hcode(array['address'][:4] + '...' + array['address'][-5:]),
+					language("💵 Баланс: ≈ ", user_info['language']) + str('{0:,}'.format(int(array['balance'])).replace(',', ',')) + " $" if array['balance'] else language("💵 Баланс: ") + hcode("0$"),
+					language("Название: ") + hcode(message.text),
+					"",
+					])
+				await message.bot.delete_message(user_info['chat_id'], message.message_id - 1)
+				await message.bot.send_message(chat_id = user_info['chat_id'], text = text)
+				await state.finish()
+				await wallets(message, db, user_info, telegram, settings)
+	else:
+		await message.reply(language("⚠️ Поддерживается исключительно текст", user_info['language']))
+
+async def name_from_ETH_Wallet(message: types.Message, db, user_info, settings, telegram, state: FSMContext):
 	if message.text:
 		if len(message.text) > 35:
 			await message.reply(language("⚠️ Слишком большая длинна", user_info['language']), reply_markup = keyboard)
@@ -626,7 +656,7 @@ async def notification_settings(call: types.CallbackQuery, callback_data: dict, 
 		await db.change_notification(chat_id = user_info['chat_id'], value = 1)
 		await call.bot.edit_message_reply_markup(chat_id = user_info['chat_id'], message_id = call.message.message_id, reply_markup = keyboard)
 
-async def setting_value(call: types.CallbackQuery, callback_data: dict, db, user_info, settings, telegram):
+async def setting_value(call: types.CallbackQuery, callbacsk_data: dict, db, user_info, settings, telegram):
 	if callback_data['action'] == "language":
 		keyboard = types.InlineKeyboardMarkup()
 		keyboard.add(types.InlineKeyboardButton(language("🇷🇺 Русский", user_info['language']), callback_data = language_callback.new(lang = 'ru')))
@@ -661,7 +691,8 @@ def register_user(dp: Dispatcher):
 	dp.register_callback_query_handler(page_add_wallet, addWallet_callback.filter())
 	dp.register_callback_query_handler(choosing_walletNetwork, network_callback.filter())
 	dp.register_message_handler(getting_TronAddress, IsPrivate(), state = StatesAddWallet.get_TronAddress, content_types = types.ContentTypes.ANY)
-	dp.register_message_handler(name_fromWallet, IsPrivate(), state = StatesAddWallet.get_name, content_types = types.ContentTypes.ANY)
+	dp.register_message_handler(name_from_TRON_Wallet, IsPrivate(), state = StatesAddWallet.get_name_tron, content_types = types.ContentTypes.ANY)
+	dp.register_message_handler(name_from_ETH_Wallet, IsPrivate(), state = StatesAddWallet.get_name_eth, content_types = types.ContentTypes.ANY)
 	dp.register_callback_query_handler(keep_nameWallet, nameWallet_callback.filter(), state = "*")
 	dp.register_callback_query_handler(cancel_addWallet, cancel_callback.filter(), state = "*")
 	dp.register_message_handler(getting_EthAddress, IsPrivate(), state = StatesAddWallet.get_ETHAddress, content_types = types.ContentTypes.ANY)

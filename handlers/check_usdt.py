@@ -11,7 +11,7 @@ from misc.translate import language
 from tronpy.providers import HTTPProvider
 from aiogram.utils.markdown import hbold, hcode, hitalic, hunderline, hstrikethrough, hlink
 # init()
-#os.system("cls")
+# os.system("cls")
 
 
 class CheckTransactions():
@@ -32,7 +32,6 @@ class CheckTransactions():
 				return (contract)
 			except Exception as e:
 				pass
-				# print(Fore.RED + f"{str(e)}\n" + Style.RESET_ALL)
 
 	def convert_to_decimal(self, amount, decimal = 6):
 		return int(amount * (10 ** decimal))
@@ -57,7 +56,7 @@ class CheckTransactions():
 			last_block = self.client.get_latest_block_number()
 			if self.block_number < last_block:
 				txs = self.client.get_block(last_block)
-				#print("[USDT] BLOCK" + Fore.GREEN + " №" + str(last_block) + Style.RESET_ALL + " (" + str(len(txs['transactions'])) + " transactions)")
+				# print("[USDT] BLOCK" + Fore.GREEN + " №" + str(last_block) + Style.RESET_ALL + " (" + str(len(txs['transactions'])) + " transactions)")
 				if txs['transactions']:
 					for transaction in txs['transactions']:
 						value = transaction['raw_data']['contract'][0]['parameter']['value']
@@ -70,7 +69,7 @@ class CheckTransactions():
 							address_to = data[0]
 							usdt_decimal = data[1]
 							for wallet in all_wallets:
-								if wallet['address'] == address_from and wallet['outgoing_transactions'] == 1:
+								if wallet['address'] == address_from and wallet['outgoing_transactions'] == 1 and transaction['ret'][0]['contractRet'] == "SUCCESS":
 									transfer_amount = self.convert_from_decimal(usdt_decimal)
 									if transfer_amount > 0:
 										if wallet['amount_filter'] == 0 or float(wallet['amount_filter']) <= transfer_amount:
@@ -106,7 +105,7 @@ class CheckTransactions():
 														img.close()
 											# print(Fore.GREEN + "ADDRESS FROM - " + Style.RESET_ALL + Fore.CYAN + str(address_from) + " " + wallet['name'] + Style.RESET_ALL + Fore.GREEN + " | ADDRESS TO -" + Style.RESET_ALL + Fore.CYAN + address_to + Style.RESET_ALL + Fore.GREEN +" | SUM: " + str(round(transfer_amount, 2)) + "$ | Balance: ≈ " + str('{0:,}'.format(int(balance_wallet)).replace(',', '.')) + "$" + Style.RESET_ALL)
 
-								elif wallet['address'] == address_to and wallet['input_transactions'] == 1:
+								elif wallet['address'] == address_to and wallet['input_transactions'] == 1 and transaction['ret'][0]['contractRet'] == "SUCCESS":
 									transfer_amount = self.convert_from_decimal(usdt_decimal)
 									if transfer_amount > 0:
 										if wallet['amount_filter'] == 0 or float(wallet['amount_filter']) <= transfer_amount:

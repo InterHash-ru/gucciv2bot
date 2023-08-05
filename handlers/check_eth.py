@@ -1,4 +1,8 @@
 import time
+
+import datetime
+from datetime import datetime
+
 import asyncio
 import os, sys, json, requests
 
@@ -66,6 +70,13 @@ class CheckTransactions():
 		usd_amount = float(eth_amount) * float(eth_to_usd)
 		return round(usd_amount, 2)
 
+	def checking_transaction_status(self, tx_hash): # ETH transaction
+		transaction = self.client.eth.get_transaction_receipt(tx_hash)
+		if transaction['status'] == 1:
+			return True
+		else:
+			return False
+
 	async def TrackingTransfers(self):
 		await self.db.create_pool()
 		while True:
@@ -79,16 +90,16 @@ class CheckTransactions():
 					pass
 				if txs:
 					for transaction in txs['transactions']:
-						if transaction['to'] == '0xdAC17F958D2ee523a2206206994597C13D831ec7':
+						if transaction['to'] == '0xdAC17F958D2ee523a2206206994597C13D831ec7':	# TRANSACTION USDT TOKEN IN ERC-20 NETWORK
 							result = self.contract.decode_function_input(transaction['input'])
 							address_from = transaction['from']
 							if result[0].fn_name == "transfer":
 								address_to = result[1]['_to']
 								for wallet in all_wallets:
-									if wallet['transfer_usdt'] == 1:
-										if wallet['address'] == address_from and wallet['outgoing_transactions'] == 1:
-											trans_amount = int(result[1]['_value']) / (10 ** 6)
-											if wallet['amount_filter'] == 0 or float(wallet['amount_filter']) <= float(trans_amount):
+									if wallet['address'] == address_from and wallet['outgoing_transactions'] == 1 and wallet['transfer_usdt'] == 1:
+										trans_amount = int(result[1]['_value']) / (10 ** 6)
+										if wallet['amount_filter'] == 0 or float(wallet['amount_filter']) <= float(trans_amount):
+											if self.checking_transaction_status(transaction['hash']) == True:	
 												user_info = await self.db.get_info_user(chat_id = wallet['chat_id'])
 												balance_usdt_tokens = self.contract.functions.balanceOf(wallet['address']).call()
 												balance_usdt_tokens = int(balance_usdt_tokens / (10 ** 6))			# Total USDT token holders
@@ -105,7 +116,7 @@ class CheckTransactions():
 
 												if user_info and user_info['kicked'] == 0:
 													text = '\n'.join([
-														hbold(f"➖ {str(trans_amount)}" + " USDT ") + hitalic("(TRC-20)") + hitalic("🔹 "),
+														hbold(f"➖ {str(trans_amount)}" + " USDT ") + hitalic("(ERC-20)") + hitalic("🔹 "),
 														"",
 														language("◦ от 	", user_info['language']) + hcode(address_from[:6] + '...' + address_from[-5:]) + "  " + hitalic("(" + wallet['name'] + ")"),
 														language("• на 	", user_info['language']) + hcode(str(address_to[:6]) + '...' + str(address_to[-5:])),
@@ -124,9 +135,10 @@ class CheckTransactions():
 														img.close()
 													# print(Fore.GREEN + "ADDRESS FROM - " + Style.RESET_ALL + Fore.CYAN + str(wallet['address'] + Style.RESET_ALL + " ("+wallet['name']+")") + Fore.GREEN + " | ADDRESS TO - " + Style.RESET_ALL + Fore.MAGENTA + str(address_to) + Style.RESET_ALL + Fore.GREEN +" | SUM: " + str(trans_amount) + " USDT | Balance USDT token: ≈ " + str('{0:,}'.format(int(balance_usdt_tokens)).replace(',', '.')) + " USDT" + Style.RESET_ALL)
 												self.block_number = last_block
-										elif wallet['address'] == address_to and wallet['input_transactions'] == 1:
-											trans_amount = int(result[1]['_value']) / (10 ** 6)
-											if wallet['amount_filter'] == 0 or float(wallet['amount_filter']) <= float(trans_amount):
+									elif wallet['address'] == address_to and wallet['input_transactions'] == 1 and wallet['transfer_usdt'] == 1:
+										trans_amount = int(result[1]['_value']) / (10 ** 6)
+										if wallet['amount_filter'] == 0 or float(wallet['amount_filter']) <= float(trans_amount):
+											if self.checking_transaction_status(transaction['hash']) == True:
 												user_info = await self.db.get_info_user(chat_id = wallet['chat_id'])
 												balance_usdt_tokens = self.contract.functions.balanceOf(wallet['address']).call()
 												balance_usdt_tokens = int(balance_usdt_tokens / (10 ** 6))			# Total USDT token holders
@@ -143,7 +155,7 @@ class CheckTransactions():
 												
 												if user_info and user_info['kicked'] == 0:
 													text = '\n'.join([
-														hbold(f"➕ {str(trans_amount)}" + " USDT ") + hitalic("(TRC-20)") + hitalic("🔹 "),
+														hbold(f"➕ {str(trans_amount)}" + " USDT ") + hitalic("(ERC-20)") + hitalic("🔹 "),
 														"",
 														language("◦ от 	", user_info['language']) + hcode(address_from[:6] + '...' + address_from[-5:]),
 														language("• на 	", user_info['language']) + hcode(address_to[:6] + '...' + address_to[-5:]) + "  " + hitalic("(" + wallet['name'] + ")"),
@@ -160,11 +172,10 @@ class CheckTransactions():
 													elif user_info['notification'] == 0:
 														await self.bot.send_photo(chat_id = user_info['chat_id'], photo = img, caption = text, disable_notification = True)
 														img.close()
-													# print(Fore.GREEN + "ADDRESS TO - " + Style.RESET_ALL + Fore.CYAN + str(address_to + Style.RESET_ALL + Fore.GREEN + " | ADDRESS FROM - " + Style.RESET_ALL + Fore.MAGENTA + str(wallet['address']) + Style.RESET_ALL + " ("+wallet['name']+")") + Fore.GREEN +" | SUM: " + str(trans_amount) + " USDT | Balance USDT token: ≈ " + str('{0:,}'.format(int(balance_usdt_tokens)).replace(',', '.')) + " USDT" + Style.RESET_ALL)
+													# print(Fore.RED + "ADDRESS TO - " + Style.RESET_ALL + Fore.CYAN + str(address_to + Style.RESET_ALL + Fore.RED + " | ADDRESS FROM - " + Style.RESET_ALL + Fore.MAGENTA + str(wallet['address']) + Style.RESET_ALL + " ("+wallet['name']+")") + Fore.RED +" | SUM: " + str(trans_amount) + " USDT | Balance USDT token: ≈ " + str('{0:,}'.format(int(balance_usdt_tokens)).replace(',', '.')) + " USDT" + Style.RESET_ALL)
 												self.block_number = last_block
-									else:
-										pass
-						try:
+
+						try:																	# TRANSACTION ETH TOKEN IN ERC-20 NETWORK
 							address_from = transaction['from']
 							address_to = transaction['to']
 							tx_hash = transaction['hash'].hex()
@@ -174,7 +185,6 @@ class CheckTransactions():
 										if wallet['address'] == address_from and wallet['outgoing_transactions'] == 1:
 											eth_amount = self.client.from_wei(transaction['value'], 'ether')
 											usd_amount = self.convert_eth_to_usd(eth_amount)
-
 											if wallet['amount_filter'] == 0 or float(wallet['amount_filter']) <= float(usd_amount):
 												if balance_usd:
 													user_info = await self.db.get_info_user(chat_id = wallet['chat_id'])
@@ -212,7 +222,6 @@ class CheckTransactions():
 															img.close()
 														# print(Fore.GREEN + "ADDRESS FROM - " + Style.RESET_ALL + Fore.CYAN + str(transaction['from'] + " ("+wallet['name']+")") + Style.RESET_ALL + Fore.GREEN + " | ADDRESS TO - " + Style.RESET_ALL + Fore.MAGENTA + transaction['to'] + Style.RESET_ALL + Fore.GREEN +" | SUM: " + str(eth_amount) + " ETH | Balance: ≈ " + str('{0:,}'.format(int(balance_usd)).replace(',', '.')) + "$" + Style.RESET_ALL)
 													self.block_number = last_block
-
 										elif wallet['address'] == address_to and wallet['input_transactions'] == 1:
 											eth_amount = self.client.from_wei(transaction['value'], 'ether')
 											usd_amount = self.convert_eth_to_usd(eth_amount)
@@ -250,10 +259,10 @@ class CheckTransactions():
 														elif user_info['notification'] == 0:
 															await self.bot.send_photo(chat_id = user_info['chat_id'], photo = img, caption = text, disable_notification = True)
 															img.close()		
-														# print(Fore.GREEN + "ADDRESS TO - " + Style.RESET_ALL + Fore.CYAN + str(transaction['to'] + " ("+wallet['name']+")") + Style.RESET_ALL + Fore.GREEN + " | ADDRESS FROM - " + Style.RESET_ALL + Fore.MAGENTA + transaction['from'] + Style.RESET_ALL + Fore.GREEN +" | SUM: " + str(eth_amount) + " ETH | Balance: ≈ " + str('{0:,}'.format(int(balance_usd)).replace(',', '.')) + "$" + Style.RESET_ALL)
+														# print(Fore.RED + "ADDRESS TO - " + Style.RESET_ALL + Fore.CYAN + str(transaction['to'] + " ("+wallet['name']+")") + Style.RESET_ALL + Fore.RED + " | ADDRESS FROM - " + Style.RESET_ALL + Fore.MAGENTA + transaction['from'] + Style.RESET_ALL + Fore.RED +" | SUM: " + str(eth_amount) + " ETH | Balance: ≈ " + str('{0:,}'.format(int(balance_usd)).replace(',', '.')) + "$" + Style.RESET_ALL)
 													self.block_number = last_block
-									else:
-										pass
+										else:
+											pass
 						except web3.exceptions.BlockNotFound as e:
 							pass
 						except RuntimeError as e:
@@ -261,6 +270,6 @@ class CheckTransactions():
 						except asyncio.CancelledError:
 							pass
 					self.block_number = last_block
-					await asyncio.sleep(4)
+					await asyncio.sleep(5)
 				else:
 					pass

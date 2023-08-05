@@ -7,7 +7,6 @@ TELEGRAM = {
 	"token"				: "6489473979:AAGhyeR6Z8HMrjiDGlxEkEGNIqxGUAAsJiY",
 }
 
-
 MYSQL_INFO = {
 	"host"				: "localhost",
 	"user"				: "admin",
