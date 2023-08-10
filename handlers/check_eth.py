@@ -85,8 +85,12 @@ class CheckTransactions():
 			if self.block_number < last_block:
 				try:
 					txs = self.client.eth.get_block(int(last_block), True)
-					# print("[ETH] BLOCK" + Fore.GREEN + " №" + str(last_block) + Style.RESET_ALL + " (" + str(len(txs['transactions'])) + " transactions)")
-				except:
+				except ReadTimeoutError:
+					await asyncio.sleep(1)
+					txs = self.client.eth.get_block(int(last_block), True)
+				except Exception as error:
+					txs = self.client.eth.get_block(int(last_block), True)
+				finally:
 					pass
 				if txs:
 					for transaction in txs['transactions']:
@@ -263,7 +267,7 @@ class CheckTransactions():
 													self.block_number = last_block
 										else:
 											pass
-						except web3.exceptions.BlockNotFound as e:
+						except web3.exceptions.BlockNotFound:
 							pass
 						except RuntimeError as e:
 							pass
@@ -272,4 +276,5 @@ class CheckTransactions():
 					self.block_number = last_block
 					await asyncio.sleep(5)
 				else:
-					pass
+					await asyncio.sleep(1)
+

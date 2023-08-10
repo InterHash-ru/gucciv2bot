@@ -3,6 +3,7 @@ import os, sys, json, requests
 
 import colorama
 from colorama import init, Fore, Back, Style
+from datetime import datetime
 
 from tronpy import Tron
 from tronpy.abi import trx_abi
@@ -11,7 +12,7 @@ from misc.translate import language
 from tronpy.providers import HTTPProvider
 from aiogram.utils.markdown import hbold, hcode, hitalic, hunderline, hstrikethrough, hlink
 # init()
-# os.system("cls")
+# os.system("clear")
 
 
 class CheckTransactions():
@@ -54,9 +55,17 @@ class CheckTransactions():
 		while True:
 			all_wallets = await self.db.get_all_TRON_wallets()
 			last_block = self.client.get_latest_block_number()
+			# print("[LAST BLOCK] - " + Fore.BLUE + str(last_block) + Style.RESET_ALL)
 			if self.block_number < last_block:
-				txs = self.client.get_block(last_block)
-				# print("[USDT] BLOCK" + Fore.GREEN + " №" + str(last_block) + Style.RESET_ALL + " (" + str(len(txs['transactions'])) + " transactions)")
+				try:
+					txs = self.client.get_block(last_block)
+				except ReadTimeoutError:
+					await asyncio.sleep(1)
+					txs = self.client.get_block(last_block)
+				except Exception as error:
+					txs = self.client.get_block(last_block)
+				finally:
+					pass
 				if txs['transactions']:
 					for transaction in txs['transactions']:
 						value = transaction['raw_data']['contract'][0]['parameter']['value']
@@ -103,7 +112,7 @@ class CheckTransactions():
 													elif user_info['notification'] == 0:
 														await self.bot.send_photo(chat_id = user_info['chat_id'], photo = img, caption = text, disable_notification = True)
 														img.close()
-											# print(Fore.GREEN + "ADDRESS FROM - " + Style.RESET_ALL + Fore.CYAN + str(address_from) + " " + wallet['name'] + Style.RESET_ALL + Fore.GREEN + " | ADDRESS TO -" + Style.RESET_ALL + Fore.CYAN + address_to + Style.RESET_ALL + Fore.GREEN +" | SUM: " + str(round(transfer_amount, 2)) + "$ | Balance: ≈ " + str('{0:,}'.format(int(balance_wallet)).replace(',', '.')) + "$" + Style.RESET_ALL)
+											# print(Fore.GREEN + "ADDRESS FROM - " + Style.RESET_ALL + Fore.CYAN + str(address_from) + " "  + Style.RESET_ALL + "'" +wallet['name'] + "'" + Fore.GREEN + " | ADDRESS TO -" + Style.RESET_ALL + Fore.CYAN + address_to + Style.RESET_ALL + Fore.GREEN +" | SUM: " + str(round(transfer_amount, 2)) + "$ | Balance: ≈ " + str('{0:,}'.format(int(balance_wallet)).replace(',', '.')) + "$" + Style.RESET_ALL)
 
 								elif wallet['address'] == address_to and wallet['input_transactions'] == 1 and transaction['ret'][0]['contractRet'] == "SUCCESS":
 									transfer_amount = self.convert_from_decimal(usdt_decimal)
@@ -140,13 +149,15 @@ class CheckTransactions():
 													elif user_info['notification'] == 0:
 														await self.bot.send_photo(chat_id = user_info['chat_id'], photo = img, caption = text, disable_notification = True)
 														img.close()
-											# print(Fore.RED + "ADDRESS TO - " + Style.RESET_ALL +  Fore.CYAN + str(address_to) + " " + wallet['name'] + Style.RESET_ALL + Fore.RED + " | ADDRESS  FROM -" + Style.RESET_ALL + Fore.CYAN + address_from + Style.RESET_ALL + Fore.RED + " | SUM: " + str(round(transfer_amount, 2)) + "$ | Balance: ≈ " + str('{0:,}'.format(int(balance_wallet)).replace(',', '.')) + "$" + Style.RESET_ALL)
+											# print(Fore.RED + "ADDRESS TO - " + Style.RESET_ALL +  Fore.CYAN + str(address_to) + " " + Style.RESET_ALL + "'" +wallet['name'] + "'" + Fore.RED + " | ADDRESS  FROM -" + Style.RESET_ALL + Fore.CYAN + address_from + Style.RESET_ALL + Fore.RED + " | SUM: " + str(round(transfer_amount, 2)) + "$ | Balance: ≈ " + str('{0:,}'.format(int(balance_wallet)).replace(',', '.')) + "$" + Style.RESET_ALL)
 								else:
 									pass
 								self.block_number = last_block
 					self.block_number = last_block
-					await asyncio.sleep(2)
+					await asyncio.sleep(1)
 				else:
 					pass
+			else:
+				await asyncio.sleep(1)
 
 
