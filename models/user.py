@@ -115,7 +115,7 @@ class User:
 		return await self.execute(sql, (_from, _to, amount, _hash), execute = True)
 
 	async def get_history_transaction(self, address):
-		sql = "SELECT * FROM history_transaction WHERE _from = %s OR _to = %s ORDER BY id DESC"
+		sql = "SELECT * FROM history_transaction WHERE _from = %s OR _to = %s"
 		return await self.execute(sql, (address, address), fetch = True)
 
 	async def search_history_by_param(self, _hash):
