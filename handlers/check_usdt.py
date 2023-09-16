@@ -16,8 +16,8 @@ from aiogram.utils.markdown import hbold, hcode, hitalic, hunderline, hstrikethr
 
 class CheckTransactions():
 	def __init__(self, bot, dp, db, API_KEY):
-		self.client = Tron(HTTPProvider("http://34.220.77.106:8090"))
-		# self.client = Tron(HTTPProvider("http://3.225.171.164:8090"))
+		# self.client = Tron(HTTPProvider("http://34.220.77.106:8090"))
+		self.client = Tron(HTTPProvider("http://3.225.171.164:8090"))
 		self.contract = self.getContract()
 		self.bot = bot
 		self.dp = dp
@@ -50,13 +50,13 @@ class CheckTransactions():
 
 	async def TrackingTransfers(self):
 		await self.db.create_pool()
-
 		while True:
 			all_wallets = await self.db.get_all_TRON_wallets()
 			last_block = self.client.get_latest_block_number()
-			if self.block_number < last_block:
+			# text = "DOUBLE !" if int(self.block_number) == int(last_block) else " "
+			if int(self.block_number) < int(last_block):
 				txs = self.client.get_block(last_block)
-				# print("[USDT] BLOCK" + Fore.GREEN + " №" + str(last_block) + Style.RESET_ALL + " (" + str(len(txs['transactions'])) + " transactions)")
+				# print("[USDT] BLOCK" + Fore.GREEN + " №" + str(last_block) + Style.RESET_ALL + " (" + str(len(txs['transactions'])) + " transactions) |	" + str(self.block_number) + '/' + str(last_block))
 				if txs['transactions']:
 					for transaction in txs['transactions']:
 						value = transaction['raw_data']['contract'][0]['parameter']['value']
@@ -87,12 +87,12 @@ class CheckTransactions():
 													await self.db.add_history_transaction(_from = address_from, _to = address_to, amount = float(transfer_amount), _hash = _hash)
 												if user_info and user_info['kicked'] == 0:
 													text = '\n'.join([
-														hbold(f"➖ {str(round(transfer_amount, 2)).replace('.', ',')}" + " USDT 🔸"),
+														hbold(f"➖ {str(round(transfer_amount, 2))}" + " USDT 🔸"),
 														"",
 														language("◦ от 	", user_info['language']) + hcode(address_from[:6] + '...' + address_from[-5:]) + "  " + hitalic("(" + wallet['name'] + ")"),
 														language("• на 	", user_info['language']) + hcode(address_to[:6] + '...' + address_to[-5:]),
 														"",
-														language("💵 Баланс: ≈ ", user_info['language']) + str('{0:,}'.format(int(balance_wallet)).replace('.', ',')) + " $",
+														language("💵 Баланс: ≈ ", user_info['language']) + str('{0:,}'.format(int(balance_wallet)).replace(',', '.')) + " $",
 														"",
 														hlink("ℹ️ Transaction Details", "https://tronscan.org/#/transaction/" + _hash),
 														])
@@ -103,7 +103,7 @@ class CheckTransactions():
 													elif user_info['notification'] == 0:
 														await self.bot.send_photo(chat_id = user_info['chat_id'], photo = img, caption = text, disable_notification = True)
 														img.close()
-											# print(Fore.GREEN + "ADDRESS FROM - " + Style.RESET_ALL + Fore.CYAN + str(address_from) + " " + wallet['name'] + Style.RESET_ALL + Fore.GREEN + " | ADDRESS TO -" + Style.RESET_ALL + Fore.CYAN + address_to + Style.RESET_ALL + Fore.GREEN +" | SUM: " + str(round(transfer_amount, 2)) + "$ | Balance: ≈ " + str('{0:,}'.format(int(balance_wallet)).replace(',', '.')) + "$" + Style.RESET_ALL)
+											# print(Fore.GREEN + "      ADDRESS FROM - " + Style.RESET_ALL + Fore.CYAN + str(address_from) + Style.RESET_ALL + " '" + wallet['name'] + "'" + Fore.GREEN + " | ADDRESS TO - " + Style.RESET_ALL + Fore.CYAN + address_to + Style.RESET_ALL + Fore.GREEN +" | SUM: " + str(round(transfer_amount, 2)) + "$ | Balance: ≈ " + str('{0:,}'.format(int(balance_wallet)).replace(',', '.')) + "$" + Style.RESET_ALL)
 
 								elif wallet['address'] == address_to and wallet['input_transactions'] == 1 and transaction['ret'][0]['contractRet'] == "SUCCESS":
 									transfer_amount = self.convert_from_decimal(usdt_decimal)
@@ -124,12 +124,12 @@ class CheckTransactions():
 
 												if user_info and user_info['kicked'] == 0:
 													text = '\n'.join([
-														hbold(f"➕ {str(round(transfer_amount, 2)).replace('.', ',')}" + " USDT 🔸"),
+														hbold(f"➕ {str(round(transfer_amount, 2))}" + " USDT 🔸"),
 														"",
 														language("◦ от 	", user_info['language']) + hcode(address_from[:6] + '...' + address_from[-5:]),
 														language("• на 	", user_info['language']) + hcode(address_to[:6] + '...' + address_to[-5:]) + "  " + hitalic("(" + wallet['name'] + ")"),
 														"",
-														language("💵 Баланс: ≈ ", user_info['language']) + str('{0:,}'.format(int(balance_wallet)).replace('.', ',')) + " $",
+														language("💵 Баланс: ≈ ", user_info['language']) + str('{0:,}'.format(int(balance_wallet)).replace(',', '.')) + " $",
 														"",
 														hlink("ℹ️ Transaction Details", "https://tronscan.org/#/transaction/" + _hash),
 														])
@@ -140,7 +140,7 @@ class CheckTransactions():
 													elif user_info['notification'] == 0:
 														await self.bot.send_photo(chat_id = user_info['chat_id'], photo = img, caption = text, disable_notification = True)
 														img.close()
-											# print(Fore.RED + "ADDRESS TO - " + Style.RESET_ALL +  Fore.CYAN + str(address_to) + " " + wallet['name'] + Style.RESET_ALL + Fore.RED + " | ADDRESS  FROM -" + Style.RESET_ALL + Fore.CYAN + address_from + Style.RESET_ALL + Fore.RED + " | SUM: " + str(round(transfer_amount, 2)) + "$ | Balance: ≈ " + str('{0:,}'.format(int(balance_wallet)).replace(',', '.')) + "$" + Style.RESET_ALL)
+											# print(Fore.RED + "      ADDRESS TO - " + Style.RESET_ALL +  Fore.CYAN + str(address_to) + Style.RESET_ALL + " '" + wallet['name'] + "'" + Fore.RED + " | ADDRESS  FROM - " + Style.RESET_ALL + Fore.CYAN + address_from + Style.RESET_ALL + Fore.RED + " | SUM: " + str(round(transfer_amount, 2)) + "$ | Balance: ≈ " + str('{0:,}'.format(int(balance_wallet)).replace(',', '.')) + "$" + Style.RESET_ALL)
 								else:
 									pass
 								self.block_number = last_block
@@ -148,5 +148,8 @@ class CheckTransactions():
 					await asyncio.sleep(2)
 				else:
 					pass
+			else:
+				self.block_number = last_block
+				await asyncio.sleep(2)
 
 

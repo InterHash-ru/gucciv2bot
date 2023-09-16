@@ -116,13 +116,13 @@ class CheckTransactions():
 
 												if user_info and user_info['kicked'] == 0:
 													text = '\n'.join([
-														hbold(f"➖ {str(trans_amount).replace('.', ',')}" + " USDT ") + hitalic("(ERC-20)") + hitalic("🔹 "),
+														hbold(f"➖ {str(trans_amount)}" + " USDT ") + hitalic("(ERC-20)") + hitalic("🔹 "),
 														"",
 														language("◦ от 	", user_info['language']) + hcode(address_from[:6] + '...' + address_from[-5:]) + "  " + hitalic("(" + wallet['name'] + ")"),
 														language("• на 	", user_info['language']) + hcode(str(address_to[:6]) + '...' + str(address_to[-5:])),
 														"",
-														language("💵 Баланс ETH: ≈ ", user_info['language']) + str('{0:,}'.format(int(balance_usd)).replace('.', ',')) + " $" + hitalic(f" ({round(balance_eth, 2)} ETH)") if balance_usd else language("💵 Баланс ETH: ") + hcode("0$"),
-														language("💲 Баланс USDT: ", user_info['language']) + str('{0:,}'.format(int(balance_usdt_tokens)).replace('.', ',')) + " USDT" if balance_usdt_tokens else language("💲 Баланс USDT: ", user_info['language']) + hcode("0 USDT"),
+														language("💵 Баланс ETH: ≈ ", user_info['language']) + str('{0:,}'.format(int(balance_usd)).replace(',', ',')) + " $" + hitalic(f" ({round(balance_eth, 2)} ETH)") if balance_usd else language("💵 Баланс ETH: ") + hcode("0$"),
+														language("💲 Баланс USDT: ", user_info['language']) + str('{0:,}'.format(int(balance_usdt_tokens)).replace(',', ',')) + " USDT" if balance_usdt_tokens else language("💲 Баланс USDT: ", user_info['language']) + hcode("0 USDT"),
 														"",
 														hlink("ℹ️ Transaction Details", "https://etherscan.io/tx/" + str(transaction['hash'].hex())),
 														])
@@ -155,13 +155,13 @@ class CheckTransactions():
 												
 												if user_info and user_info['kicked'] == 0:
 													text = '\n'.join([
-														hbold(f"➕ {str(trans_amount).replace('.', ',')}" + " USDT ") + hitalic("(ERC-20)") + hitalic("🔹 "),
+														hbold(f"➕ {str(trans_amount)}" + " USDT ") + hitalic("(ERC-20)") + hitalic("🔹 "),
 														"",
 														language("◦ от 	", user_info['language']) + hcode(address_from[:6] + '...' + address_from[-5:]),
 														language("• на 	", user_info['language']) + hcode(address_to[:6] + '...' + address_to[-5:]) + "  " + hitalic("(" + wallet['name'] + ")"),
 														"",
-														language("💵 Баланс ETH: ≈ ", user_info['language']) + str('{0:,}'.format(int(balance_usd)).replace('.', ',')) + " $" + hitalic(f" ({round(balance_eth, 2)} ETH)") if balance_usd else language("💵 Баланс ETH: ") + hcode("0$"),
-														language("💲 Баланс USDT: ", user_info['language']) + str('{0:,}'.format(int(balance_usdt_tokens)).replace('.', ',')) + " USDT" if balance_usdt_tokens else language("💲 Баланс USDT: ", user_info['language']) + hcode("0 USDT"),
+														language("💵 Баланс ETH: ≈ ", user_info['language']) + str('{0:,}'.format(int(balance_usd)).replace(',', ',')) + " $" + hitalic(f" ({round(balance_eth, 2)} ETH)") if balance_usd else language("💵 Баланс ETH: ") + hcode("0$"),
+														language("💲 Баланс USDT: ", user_info['language']) + str('{0:,}'.format(int(balance_usdt_tokens)).replace(',', ',')) + " USDT" if balance_usdt_tokens else language("💲 Баланс USDT: ", user_info['language']) + hcode("0 USDT"),
 														"",
 														hlink("ℹ️ Transaction Details", "https://etherscan.io/tx/" + str(transaction['hash'].hex())),
 														])
@@ -203,13 +203,13 @@ class CheckTransactions():
 
 													if user_info and user_info['kicked'] == 0:
 														text = '\n'.join([
-															hbold(f"➖ {str(round(eth_amount, 2)).replace('.', ',')}" + " ETH 🔹 ") + hitalic(f"≈ {usd_amount}$"),
+															hbold(f"➖ {str(round(eth_amount, 2))}" + " ETH 🔹 ") + hitalic(f"≈ {usd_amount}$"),
 															"",
 															language("◦ от 	", user_info['language']) + hcode(address_from[:6] + '...' + address_from[-5:]) + "  " + hitalic("(" + wallet['name'] + ")"),
 															language("• на 	", user_info['language']) + hcode(address_to[:6] + '...' + address_to[-5:]),
 															"",
-															language("💵 Баланс ETH: ≈ ", user_info['language']) + str('{0:,}'.format(int(balance_usd)).replace('.', ',')) + " $" + hitalic(f" ({round(balance_eth, 2)} ETH)") if balance_usd else language("💵 Баланс ETH: ") + hcode("0$"),
-															language("💲 Баланс USDT: ", user_info['language']) + str('{0:,}'.format(int(balance_usdt_tokens)).replace('.', ',')) + " USDT" if balance_usdt_tokens else language("💲 Баланс USDT: ", user_info['language']) + hcode("0 USDT"),
+															language("💵 Баланс ETH: ≈ ", user_info['language']) + str('{0:,}'.format(int(balance_usd)).replace(',', ',')) + " $" + hitalic(f" ({round(balance_eth, 2)} ETH)") if balance_usd else language("💵 Баланс ETH: ") + hcode("0$"),
+															language("💲 Баланс USDT: ", user_info['language']) + str('{0:,}'.format(int(balance_usdt_tokens)).replace(',', ',')) + " USDT" if balance_usdt_tokens else language("💲 Баланс USDT: ", user_info['language']) + hcode("0 USDT"),
 															"",
 															hlink(language("ℹ️ Transaction Details", user_info['language']), "https://etherscan.io/tx/" + tx_hash),
 															])
@@ -242,13 +242,13 @@ class CheckTransactions():
 
 													if user_info and user_info['kicked'] == 0:
 														text = '\n'.join([
-															hbold(f"➕ {str(round(eth_amount, 2)).replace('.', ',')}" + " ETH 🔹 ") + hitalic(f"≈ {usd_amount}$"),
+															hbold(f"➕ {str(round(eth_amount, 2))}" + " ETH 🔹 ") + hitalic(f"≈ {usd_amount}$"),
 															"",
 															language("◦ от 	", user_info['language']) + hcode(address_from[:6] + '...' + address_from[-5:]),
 															language("• на 	", user_info['language']) + hcode(address_to[:6] + '...' + address_to[-5:]) + "  " + hitalic("(" + wallet['name'] + ")"),
 															"",
-															language("💵 Баланс ETH: ≈ ", user_info['language']) + str('{0:,}'.format(int(balance_usd)).replace('.', ',')) + " $" + hitalic(f" ({round(balance_eth, 2)} ETH)") if balance_usd else language("💵 Баланс ETH: ") + hcode("0$"),
-															language("💲 Баланс USDT: ", user_info['language']) + str('{0:,}'.format(int(balance_usdt_tokens)).replace('.', ',')) + " USDT" if balance_usdt_tokens else language("💲 Баланс USDT: ", user_info['language']) + hcode("0 USDT"),
+															language("💵 Баланс ETH: ≈ ", user_info['language']) + str('{0:,}'.format(int(balance_usd)).replace(',', ',')) + " $" + hitalic(f" ({round(balance_eth, 2)} ETH)") if balance_usd else language("💵 Баланс ETH: ") + hcode("0$"),
+															language("💲 Баланс USDT: ", user_info['language']) + str('{0:,}'.format(int(balance_usdt_tokens)).replace(',', ',')) + " USDT" if balance_usdt_tokens else language("💲 Баланс USDT: ", user_info['language']) + hcode("0 USDT"),
 															"",
 															hlink(language("ℹ️ Transaction Details", user_info['language']), "https://etherscan.io/tx/" + tx_hash),
 															])

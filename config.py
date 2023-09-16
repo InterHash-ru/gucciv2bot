@@ -28,7 +28,7 @@ ABI = {
 }
 
 SETTINGS = {
-	"debug_mode"		: True,
+	"debug_mode"		: False,
 	"redis"				: False,
 	"first_meeting"		: 10,
 	"logs_path"			: "data/logs/errors.log",
