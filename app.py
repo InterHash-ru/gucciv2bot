@@ -7,8 +7,8 @@ import threading
 
 from aiogram import Bot, Dispatcher
 from aiogram.types import ParseMode
+from colorama import Fore, Back, Style, init
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
-# from aiogram.contrib.fsm_storage.redis import RedisStorage2, RedisStorage
 from aiogram.contrib.middlewares.environment import EnvironmentMiddleware
 
 # FILES <
@@ -26,6 +26,14 @@ from handlers.check_usdt import CheckTransactions
 from misc.set_bot_commands import *
 # FILES >
 
+async def startPrint():
+	print(Fore.GREEN + """
+	████  ████ ███    █   █ ███ █  █ ███    ████ █  █ █   ███ █  █ ███
+	█  ██ █  █  █     █   █ █   ██ █  █     █  █ ██ █ █    █  ██ █ █  
+	████  █  █  █     █ █ █ ███ █ ██  █     █  █ █ ██ █    █  █ ██ ███
+	█  ██ █  █  █     █████ █   █  █  █     █  █ █  █ █    █  █  █ █  
+	████  ████  █      █ █  ███ █  █  █     ████ █  █ ███ ███ █  █ ███
+""" + Style.RESET_ALL)
 
 class BotRunner():
 	def __init__(self, bot, dp, db):
@@ -34,13 +42,15 @@ class BotRunner():
 		self.db = db
 
 	logger = logging.getLogger(__name__)
-
+	
 	async def main(self):
 		if SETTINGS['debug_mode']:
 			if os.name == "nt":
 				os.system("cls")
+				# await startPrint()
 			else:
 				os.system("clear")
+				# await startPrint()
 		else:
 			logging.basicConfig(
 				level=logging.INFO,

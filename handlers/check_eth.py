@@ -99,6 +99,7 @@ class CheckTransactions():
 									if wallet['address'] == address_from and wallet['outgoing_transactions'] == 1 and wallet['transfer_usdt'] == 1:
 										trans_amount = int(result[1]['_value']) / (10 ** 6)
 										if wallet['amount_filter'] == 0 or float(wallet['amount_filter']) <= float(trans_amount):
+											await asyncio.sleep(1)
 											if self.checking_transaction_status(transaction['hash']) == True:	
 												user_info = await self.db.get_info_user(chat_id = wallet['chat_id'])
 												balance_usdt_tokens = self.contract.functions.balanceOf(wallet['address']).call()
